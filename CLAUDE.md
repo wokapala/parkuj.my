@@ -97,7 +97,8 @@ parkuj.my/
 │       ├── App.jsx
 │       ├── index.css
 │       ├── components/
-│       │   ├── Landing.jsx
+│       │   ├── Landing.jsx            ← strona marketingowa (niezalogowany)
+│       │   ├── AuthPage.jsx           ← logowanie + rejestracja (PR #7, Michał)
 │       │   ├── Nav.jsx
 │       │   ├── HomePage.jsx
 │       │   ├── ReservePage.jsx
@@ -114,19 +115,19 @@ parkuj.my/
 └── backend/                           ← Java 17 + Spring Boot 4.0.6
     ├── pom.xml
     ├── mvnw / mvnw.cmd
-    └── src/
-        ├── main/
-        │   ├── java/my/parkuj/application/
-        │   │   └── Application.java   ← @SpringBootApplication (szkielet)
-        │   └── resources/
-        │       └── application.properties
-        └── test/
-            └── java/my/parkuj/application/
-                └── ApplicationTests.java
+    └── src/main/java/my/parkuj/application/
+        ├── Application.java
+        ├── controller/                ← 8 kontrolerów (szkielety)
+        ├── service/                   ← 9 serwisów (szkielety)
+        ├── repository/                ← 12 repozytoriów (szkielety)
+        ├── model/                     ← 11 encji JPA (częściowe pola)
+        ├── dto/                       ← 10 klas DTO (szkielety)
+        └── enums/                     ← 8 enumów (wypełnione)
 ```
 
 > Frontend był wcześniej w `src/` na roota — przeniesiony do `frontend/` w PR #3 (Stanisław Kopeć).
-> Backend dodany jako szkielet Maven w tym samym PR.
+> Backend: szkielet Maven w PR #3, pełna struktura pakietów w PR #5 (Stanisław Kopeć).
+> AuthPage dodany w PR #7 (Michał Kalinowski).
 
 ---
 
@@ -550,30 +551,51 @@ PATCH  /admin/api/parkings/{id}/config  # konfiguracja podziału miejsc
 ### Gotowe (frontend prototype — MOCKUP)
 > **WAŻNE:** Obecny frontend to mockup pokazowy dla prowadzącego — pokazuje jak ma wyglądać aplikacja. Będzie wymagał przepisania przy właściwej implementacji.
 
-- [x] Landing page z mockowym logowaniem
-- [x] Nav z zakładkami (strona główna / zarezerwuj / moje rezerwacje / mapa / kontakt)
+- [x] Landing page (bez logowania — osobna strona auth)
+- [x] **AuthPage** (`AuthPage.jsx`) — strona logowania/rejestracji (PR #7, Michał):
+  - tryb `login` (email + hasło) i `register` (imię, nazwisko, email, telefon, tablica, hasło)
+  - przycisk Google OAuth (mock)
+  - walidacja formularzy, komunikaty błędów
+- [x] Nav z zakładkami (strona główna / zarezerwuj / moje rezerwacje / kontakt)
 - [x] 3-krokowy wizard rezerwacji (wybór parkingu, szczegóły, płatność BLIK/karta/GPay)
 - [x] Lista rezerwacji z anulowaniem
-- [x] Mapa parkingów (Leaflet + dark tiles)
+- [x] Mapa parkingów (Leaflet + dark tiles) — osobna zakładka (do usunięcia wg planu)
 - [x] Panel właściciela (wykresy, mapa miejsc, sterowanie szlabanem)
 - [x] Wizard dołączania z parkingiem (4 kroki)
 - [x] Strona kontaktowa z FAQ
 
-### Backend — szkielet (PR #3, Stanisław Kopeć)
-- [x] Struktura Maven (`pom.xml`, `mvnw`)
-- [x] `Application.java` — @SpringBootApplication
-- [x] Zależności: spring-boot-starter-data-jpa, webmvc, postgresql, lombok
+### Backend — struktura (PR #5, Stanisław Kopeć)
+> Wszystkie pliki to **szkielety** — klasy/interfejsy z właściwymi adnotacjami, ale bez logiki biznesowej.
 
-### Do zrobienia (backend + integracja)
-- [ ] `application.properties` — konfiguracja datasource (PostgreSQL URL, credentials)
-- [ ] JPA entities (Customer, Vehicle, ParkingLot, PricingPlan, Reservation, ...)
-- [ ] Spring Data repositories
-- [ ] Service layer
-- [ ] REST controllers
+- [x] Pełna struktura pakietów: `controller / service / repository / model / dto / enums`
+- [x] `application.properties` — datasource PostgreSQL skonfigurowane:
+  ```
+  url:      jdbc:postgresql://localhost:5432/db
+  username: admin
+  password: admin
+  ddl-auto: update
+  show-sql: true
+  ```
+- [x] Wszystkie **model** (JPA `@Entity`):
+  - `Customer` — na razie tylko `id, name, email` (uproszczone, do rozbudowy)
+  - `Reservation` — `id, startTime, endTime, @Version version` (optimistic locking działa)
+  - `Vehicle, ParkingLot, PricingPlan, ParkingSession, PlateRecognitionEvent`
+  - `BarrierGate, BarrierAction, Payment, AdminUser, IncidentReport`
+- [x] Wszystkie **repository** (puste interfejsy `extends JpaRepository`)
+- [x] Wszystkie **service** (puste klasy `@Service`)
+- [x] Wszystkie **controller** (puste klasy `@RestController` z `@RequestMapping`)
+- [x] Wszystkie **dto** (puste klasy)
+- [x] Wszystkie **enums** (`ReservationStatus, ParkingSessionStatus, PaymentMethod` itd.)
+
+### Do zrobienia (backend — wypełnienie logiki)
+- [ ] Rozbudowa entity `Customer` o pełne pola wg schematu DB (googleSub, firstName, lastName, phone, status, itp.)
+- [ ] Rozbudowa pozostałych encji o pełne pola + relacje JPA (`@ManyToOne`, `@OneToMany`)
+- [ ] Metody w repositories (custom queries)
+- [ ] Logika w services
+- [ ] Endpointy w controllers
 - [ ] Google OAuth2 + JWT auth
 - [ ] PostgreSQL schema migration (Flyway/Liquibase)
 - [ ] OCR serwis (Python/FastAPI + OpenCV/EasyOCR)
-- [ ] Integracja fizycznego szlabanu z API
 - [ ] Płatności (BLIK, karta, gotówka — provider)
 - [ ] Email z kodem rezerwacji (12 znaków)
 - [ ] Panel admina (/admin — osobna ścieżka, email+bcrypt)
