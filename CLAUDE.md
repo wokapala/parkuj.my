@@ -898,3 +898,20 @@ ParkingLotService → PricingPlanRepository
 - Punkty lojalnościowe: 0.2 pkt / 1 zł, 100 pkt = 1h darmowego parkowania
 - Klient może mieć wiele pojazdów, jeden oznaczony jako primary
 - Admini nie mają Google OAuth — osobna tabela admin_user z password_hash
+
+## 16. Decyzje organizacyjne i infrastruktura
+
+### Git workflow
+- Wszyscy 4 członkowie zespołu jako collaboratorzy na `wokapala/parkuj.my`
+- Pushowanie bezpośrednio (bez forka) — projekt zamknięty, zespół się zna
+- Docelowo każdy na własnym branchu (`imie/feature`) + PR do main gdy feature gotowy
+- Na razie (faza budowania backendu) bez wymuszania branch-per-feature
+
+### Docker — kiedy wdrożyć
+- **Teraz: za wcześnie** — backend jeszcze nie działa, frontend to mockup
+- **Docker ma sens gdy:**
+  - Backend ma działające endpointy + bazę + auth
+  - Frontend przepisany i połączony z backendem
+  - Integracja wszystkich serwisów (Java + PostgreSQL + Python OCR)
+- **Docelowy `docker-compose.yml`** będzie miał 3 serwisy: java app, postgres, python-ocr
+- **Na razie:** backend lokalnie (`mvnw spring-boot:run`), PostgreSQL lokalnie lub Supabase/Railway, frontend lokalnie (`npm run dev`)
