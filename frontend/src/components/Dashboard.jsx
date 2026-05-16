@@ -23,27 +23,28 @@ const REVENUE_DATA = [
   { day: "Nd",  value: 1240 },
 ];
 
-const TAKEN_SPOTS = new Set([
-  0,1,3,5,6,8,9,11,12,14,15,17,18,20,22,23,
-  24,26,27,29,30,31,33,34,35,36,37,39,40,41,
-  42,43,44,45,46,47,48,49,
-]);
-
 const QUICK_ACTIONS = [
   { label: "Zmień cenę",         icon: <I.TrendUp /> },
   { label: "Godziny otwarcia",   icon: <I.Clock /> },
-  { label: "Konserwacja miejsc", icon: <I.Gear /> },
+  { label: "Zmień podział miejsc", icon: <I.Gear /> },
   { label: "Raport PDF",         icon: <I.Download /> },
 ];
 
 export default function Dashboard({ setToast }) {
   const [barrierOpen, setBarrierOpen] = useState(false);
+  const [spotSplit, setSpotSplit] = useState({ total: 50, reservable: 35 });
+  const walkIn = Math.max(0, spotSplit.total - spotSplit.reservable);
 
   const toggleBarrier = () => {
     setBarrierOpen((prev) => {
       setToast(prev ? "Szlaban zamknięty" : "Szlaban otwarty");
       return !prev;
     });
+  };
+
+  const setReservable = (value) => {
+    const reservable = Math.min(Math.max(0, Number(value) || 0), spotSplit.total);
+    setSpotSplit({ ...spotSplit, reservable });
   };
 
   return (
@@ -61,7 +62,7 @@ export default function Dashboard({ setToast }) {
       {/* Stats */}
       <div className="d-grid">
         <div className="d-stat">
-          <div className="d-stat-l">Zajętość</div>
+          <div className="d-stat-l">Obłożenie</div>
           <div className="d-stat-v">76%</div>
           <div className="d-stat-c up">+12% vs wczoraj</div>
         </div>
@@ -74,11 +75,6 @@ export default function Dashboard({ setToast }) {
           <div className="d-stat-l">Aktywne rezerwacje</div>
           <div className="d-stat-v">38</div>
           <div className="d-stat-c">z 50 miejsc</div>
-        </div>
-        <div className="d-stat">
-          <div className="d-stat-l">Pkt. lojalnościowe</div>
-          <div className="d-stat-v">2 480</div>
-          <div className="d-stat-c">wydane</div>
         </div>
       </div>
 
@@ -175,24 +171,54 @@ export default function Dashboard({ setToast }) {
         </div>
 
         <div>
-          {/* Spot map */}
+          {/* Spot split */}
           <div className="d-sec">
-            <h3>Mapa miejsc</h3>
-            <div className="spot-g" style={{ gridTemplateColumns: "repeat(5,1fr)" }}>
-              {Array.from({ length: 50 }, (_, i) => (
-                <div
-                  key={i}
-                  className={`spot ${TAKEN_SPOTS.has(i) ? "taken" : "free"}`}
-                  style={{ fontSize: 9, height: 28, aspectRatio: "auto" }}
-                >
-                  {i + 1}
-                </div>
-              ))}
+            <h3>Podział miejsc</h3>
+            <div className="split-summary compact">
+              <div>
+                <span>{spotSplit.total}</span>
+                <small>razem</small>
+              </div>
+              <div>
+                <span>{spotSplit.reservable}</span>
+                <small>aplikacja</small>
+              </div>
+              <div>
+                <span>{walkIn}</span>
+                <small>walk-in</small>
+              </div>
             </div>
-            <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 8, display: "flex", gap: 12 }}>
-              <span style={{ color: "var(--success)" }}>● 12 wolnych</span>
-              <span>● 38 zajętych</span>
+            <div className="fg" style={{ marginTop: 18 }}>
+              <label className="fl">Miejsca rezerwowane online</label>
+              <input
+                className="split-range"
+                type="range"
+                min="0"
+                max={spotSplit.total}
+                value={spotSplit.reservable}
+                onChange={(e) => setReservable(e.target.value)}
+              />
             </div>
+            <div className="fr">
+              <div className="fg">
+                <label className="fl">Online</label>
+                <input
+                  className="fi"
+                  type="number"
+                  min="0"
+                  max={spotSplit.total}
+                  value={spotSplit.reservable}
+                  onChange={(e) => setReservable(e.target.value)}
+                />
+              </div>
+              <div className="fg">
+                <label className="fl">Walk-in</label>
+                <input className="fi" type="number" value={walkIn} readOnly />
+              </div>
+            </div>
+            <button className="btn btn-a btn-block" onClick={() => setToast("Podział miejsc zaktualizowany")}>
+              Zapisz podział
+            </button>
           </div>
 
           {/* Quick actions */}

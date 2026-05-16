@@ -4,7 +4,6 @@ import Landing from "./components/Landing";
 import HomePage from "./components/HomePage";
 import ReservePage from "./components/ReservePage";
 import Reservations from "./components/Reservations";
-import MapPage from "./components/MapPage";
 import JoinPage from "./components/JoinPage";
 import Dashboard from "./components/Dashboard";
 import ContactPage from "./components/ContactPage";
@@ -40,7 +39,6 @@ export default function App() {
       case "home":         return <HomePage setPage={setPage} />;
       case "reserve":      return <ReservePage setToast={setToast} />;
       case "reservations": return <Reservations setPage={setPage} setToast={setToast} />;
-      case "map":          return <MapPage setPage={setPage} />;
       case "join":         return <JoinPage user={user} setUser={setUser} setPage={setPage} setRole={setRole} />;
       case "dashboard":    return <Dashboard setToast={setToast} />;
       case "contact":      return <ContactPage setToast={setToast} />;

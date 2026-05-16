@@ -11,10 +11,6 @@ const FAQ = [
     a: "Tak, możesz anulować rezerwację do 30 minut przed jej rozpoczęciem w zakładce 'Moje rezerwacje'. Pełny zwrot środków następuje do 3 dni roboczych.",
   },
   {
-    q: "Jak zdobywam punkty lojalnościowe?",
-    a: "Za każde 1 zł wydane na parkowanie dostajesz 0,2 punktu. 100 punktów = 1 godzina darmowego parkowania w dowolnym parkingu sieci.",
-  },
-  {
     q: "Co zrobić gdy szlaban nie otwiera się?",
     a: "Naciśnij przycisk interkomu przy szlabanie i poczekaj na obsługę. Możesz też zadzwonić na naszą infolinię dostępną 24/7: +48 22 123 45 67.",
   },
@@ -78,7 +74,6 @@ export default function ContactPage({ setToast }) {
                   <option>Problem z rezerwacją</option>
                   <option>Problem z płatnością</option>
                   <option>Błąd szlabanu / wjazd</option>
-                  <option>Punkty lojalnościowe</option>
                   <option>Pytanie ogólne</option>
                   <option>Inne</option>
                 </select>

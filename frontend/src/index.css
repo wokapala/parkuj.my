@@ -208,19 +208,6 @@ body {
   font-size: 11px;
   font-weight: 700;
 }
-.loy {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--accent);
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-}
-
 .umenu {
   position: absolute;
   top: calc(100% + 8px);
@@ -307,7 +294,7 @@ body {
 
 .land-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1px;
   background: var(--border);
   border-radius: var(--r2);
@@ -599,8 +586,93 @@ body {
 .wt-acts { display: flex; justify-content: space-between; margin-top: 24px }
 
 /* ── Reserve layout ── */
+.reserve-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 16px;
+  color: var(--text3);
+}
+.reserve-search .fi { border: none; box-shadow: none; padding: 8px 0; background: transparent }
+.reserve-pick-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 16px;
+  align-items: stretch;
+}
+.reserve-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.reserve-map {
+  min-height: 460px;
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  overflow: hidden;
+  background: var(--bg2);
+}
 .res-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px }
 .res-summary { display: flex; flex-direction: column; gap: 10px }
+
+.vehicle-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 4px;
+}
+.vehicle-mode button {
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text2);
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.vehicle-mode button.on {
+  background: var(--accent);
+  color: #fff;
+}
+.vehicle-list { display: grid; gap: 8px; margin-bottom: 18px }
+.vehicle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.vehicle-card.on { border-color: var(--accent); background: var(--accent-bg) }
+.vehicle-card strong { display: block; font-size: 13px; margin-bottom: 2px }
+.vehicle-card small {
+  display: inline-flex;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.vehicle-plate {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
 
 /* ── Payment methods ── */
 .pay-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px }
@@ -640,7 +712,7 @@ body {
 .blik-digit:focus { outline: none; border-color: var(--accent) }
 
 /* ── Dashboard ── */
-.d-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px }
+.d-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px }
 .d-stat {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -781,6 +853,45 @@ body {
 .j-feat h3 { font-size: 13px; font-weight: 600; margin-bottom: 3px }
 .j-feat p { font-size: 11px; color: var(--text2); line-height: 1.5 }
 
+.split-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.split-summary div {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+}
+.split-summary span {
+  display: block;
+  font-family: 'Space Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.split-summary small {
+  display: block;
+  color: var(--text3);
+  font-size: 11px;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+.split-summary.compact { grid-template-columns: 1fr; margin-bottom: 0 }
+.split-summary.compact div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.split-summary.compact span { font-size: 20px }
+.split-range {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
 /* ── Parking spot grid ── */
 .spot-g { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px }
 .spot {
@@ -903,6 +1014,8 @@ body {
   .ham { display: flex }
   .nav { position: relative }
   .d-grid { grid-template-columns: repeat(2, 1fr) }
+  .reserve-pick-layout { grid-template-columns: 1fr }
+  .reserve-map { min-height: 360px }
   .res-layout { grid-template-columns: 1fr }
   .dash-layout { grid-template-columns: 1fr }
   .contact-grid { grid-template-columns: 1fr }
@@ -913,6 +1026,7 @@ body {
   .land h1 { font-size: 36px; letter-spacing: -1.5px }
   .land-grid { grid-template-columns: 1fr }
   .j-feats { grid-template-columns: 1fr }
+  .split-summary { grid-template-columns: 1fr }
   .main { padding: 20px 16px }
   .map-side { display: none }
   .map-wrapper { height: 380px }

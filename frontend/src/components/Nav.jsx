@@ -8,7 +8,6 @@ export default function Nav({ page, setPage, user, setUser, role, showMenu, setS
     { id: "home",         label: "Strona główna",  icon: <I.Home /> },
     { id: "reserve",      label: "Zarezerwuj",      icon: <I.Cal /> },
     { id: "reservations", label: "Moje rezerwacje", icon: <I.List /> },
-    { id: "map",          label: "Mapa parkingów",  icon: <I.MapPin /> },
     { id: "contact",      label: "Kontakt",          icon: <I.Mail /> },
   ];
 
@@ -71,9 +70,6 @@ export default function Nav({ page, setPage, user, setUser, role, showMenu, setS
                 <div className="pill">
                   <div className="av">{user.name[0]}</div>
                   <span>{user.name.split(" ")[0]}</span>
-                  {role === "customer" && (
-                    <span className="loy"><I.Heart /> 240</span>
-                  )}
                 </div>
 
                 {showMenu && (
@@ -89,6 +85,9 @@ export default function Nav({ page, setPage, user, setUser, role, showMenu, setS
                     </div>
                     <button className="umi" onClick={() => setShowMenu(false)}>
                       <I.Gear /> Ustawienia
+                    </button>
+                    <button className="umi" onClick={() => setShowMenu(false)}>
+                      <I.Car /> Dodaj pojazd
                     </button>
                     <button
                       className="umi red"

@@ -23,7 +23,7 @@ export default function Landing({ setPage, setUser }) {
           <I.Google /> Zaloguj się przez Google
         </button>
         <button className="btn btn-o btn-lg" onClick={() => setPage("join")}>
-          Mam parking <I.Arr />
+          Dołącz z parkingiem <I.Arr />
         </button>
       </div>
 
@@ -41,13 +41,6 @@ export default function Landing({ setPage, setUser }) {
           </div>
           <h3>Płatność online</h3>
           <p>Zapłać z góry przez aplikację, zero gotówki</p>
-        </div>
-        <div className="land-feat">
-          <div className="land-feat-ic">
-            <I.Shield />
-          </div>
-          <h3>Punkty lojalnościowe</h3>
-          <p>Zbieraj punkty i wymieniaj na darmowe parkowanie</p>
         </div>
       </div>
 

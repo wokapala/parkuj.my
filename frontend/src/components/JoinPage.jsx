@@ -3,13 +3,10 @@ import * as I from "../icons";
 
 const STEPS = [
   { label: "Dane",    n: 1 },
-  { label: "Parking", n: 2 },
+  { label: "Podział", n: 2 },
   { label: "Cennik",  n: 3 },
   { label: "Gotowe",  n: 4 },
 ];
-
-const SPOT_GRID_TAKEN = [0,3,5,8,11,12,15,18];
-const SPOT_GRID_DIS   = [19];
 
 export default function JoinPage({ user, setUser, setPage, setRole }) {
   const [wizardStep, setWizardStep] = useState(0);
@@ -18,6 +15,8 @@ export default function JoinPage({ user, setUser, setPage, setRole }) {
     address: "",
     city: "Warszawa",
     spots: "50",
+    reservableSpots: "35",
+    walkInSpots: "15",
     levels: "1",
     type: "indoor",
     barrier: true,
@@ -30,6 +29,34 @@ export default function JoinPage({ user, setUser, setPage, setRole }) {
   };
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
+  const setTotalSpots = (e) => {
+    const spots = Math.max(0, Number(e.target.value) || 0);
+    const reservable = Math.min(Number(form.reservableSpots) || 0, spots);
+    setForm({
+      ...form,
+      spots: String(spots),
+      reservableSpots: String(reservable),
+      walkInSpots: String(Math.max(0, spots - reservable)),
+    });
+  };
+  const setReservableSpots = (e) => {
+    const spots = Math.max(0, Number(form.spots) || 0);
+    const reservable = Math.min(Math.max(0, Number(e.target.value) || 0), spots);
+    setForm({
+      ...form,
+      reservableSpots: String(reservable),
+      walkInSpots: String(Math.max(0, spots - reservable)),
+    });
+  };
+  const setWalkInSpots = (e) => {
+    const spots = Math.max(0, Number(form.spots) || 0);
+    const walkIn = Math.min(Math.max(0, Number(e.target.value) || 0), spots);
+    setForm({
+      ...form,
+      walkInSpots: String(walkIn),
+      reservableSpots: String(Math.max(0, spots - walkIn)),
+    });
+  };
 
   if (wizardStep === 0) {
     return (
@@ -129,6 +156,16 @@ export default function JoinPage({ user, setUser, setPage, setRole }) {
                 <input className="fi" placeholder="1234567890" />
               </div>
             </div>
+            <div className="fr">
+              <div className="fg">
+                <label className="fl">Liczba miejsc</label>
+                <input className="fi" type="number" min="0" value={form.spots} onChange={setTotalSpots} />
+              </div>
+              <div className="fg">
+                <label className="fl">Poziomy</label>
+                <input className="fi" type="number" min="1" value={form.levels} onChange={set("levels")} />
+              </div>
+            </div>
             <div className="wt-acts">
               <button className="btn btn-o" onClick={() => setWizardStep(0)}>Anuluj</button>
               <button className="btn btn-a" onClick={() => setWizardStep(2)}>Dalej <I.Arr /></button>
@@ -139,16 +176,30 @@ export default function JoinPage({ user, setUser, setPage, setRole }) {
         {/* Step 2 — Parking details */}
         {wizardStep === 2 && (
           <div className="wt-card fin">
-            <h2>Szczegóły parkingu</h2>
-            <p className="desc">Ile miejsc, jakie poziomy, typ</p>
+            <h2>Podział miejsc</h2>
+            <p className="desc">Ustal ile miejsc będzie dostępnych w aplikacji, a ile zostaje dla kierowców z drogi.</p>
+            <div className="split-summary">
+              <div>
+                <span>{form.spots}</span>
+                <small>wszystkich miejsc</small>
+              </div>
+              <div>
+                <span>{form.reservableSpots}</span>
+                <small>rezerwacje w aplikacji</small>
+              </div>
+              <div>
+                <span>{form.walkInSpots}</span>
+                <small>walk-in / z drogi</small>
+              </div>
+            </div>
             <div className="fr">
               <div className="fg">
-                <label className="fl">Liczba miejsc</label>
-                <input className="fi" type="number" value={form.spots} onChange={set("spots")} />
+                <label className="fl">Miejsca rezerwowane online</label>
+                <input className="fi" type="number" min="0" max={form.spots} value={form.reservableSpots} onChange={setReservableSpots} />
               </div>
               <div className="fg">
-                <label className="fl">Poziomy</label>
-                <input className="fi" type="number" value={form.levels} onChange={set("levels")} />
+                <label className="fl">Miejsca walk-in / z drogi</label>
+                <input className="fi" type="number" min="0" max={form.spots} value={form.walkInSpots} onChange={setWalkInSpots} />
               </div>
             </div>
             <div className="fg">
@@ -158,25 +209,6 @@ export default function JoinPage({ user, setUser, setPage, setRole }) {
                 <option value="outdoor">Odkryty</option>
                 <option value="multi">Wielopoziomowy</option>
               </select>
-            </div>
-            <div className="fg">
-              <label className="fl">Podgląd miejsc</label>
-              <div className="spot-g">
-                {Array.from({ length: 20 }, (_, i) => {
-                  const cls = SPOT_GRID_TAKEN.includes(i)
-                    ? "taken"
-                    : SPOT_GRID_DIS.includes(i)
-                    ? "dis"
-                    : "free";
-                  const label = cls === "free" ? `P${i + 1}` : cls === "taken" ? "—" : "X";
-                  return <div key={i} className={`spot ${cls}`}>{label}</div>;
-                })}
-              </div>
-              <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 6, display: "flex", gap: 12 }}>
-                <span style={{ color: "var(--success)" }}>Wolne</span>
-                <span>Zajęte</span>
-                <span style={{ color: "var(--danger)" }}>Wyłączone</span>
-              </div>
             </div>
             <div className="wt-acts">
               <button className="btn btn-o" onClick={() => setWizardStep(1)}>← Wstecz</button>
@@ -264,6 +296,9 @@ export default function JoinPage({ user, setUser, setPage, setRole }) {
               </div>
               <div style={{ fontSize: 12, color: "var(--text2)" }}>
                 {form.spots} miejsc · {form.price} zł/h
+              </div>
+              <div style={{ fontSize: 12, color: "var(--text2)" }}>
+                {form.reservableSpots} online · {form.walkInSpots} walk-in
               </div>
             </div>
             <button

@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import * as I from "../icons";
 import PCard from "./PCard";
 import { MOCK_PARKINGS } from "../data/mockData";
@@ -8,6 +11,29 @@ const STEPS = [
   { n: 2, label: "Szczegóły" },
   { n: 3, label: "Płatność" },
 ];
+
+const MOCK_VEHICLES = [
+  { id: 1, name: "Toyota Corolla", plate: "WA 12345", primary: true },
+  { id: 2, name: "Skoda Octavia", plate: "WA 67890", primary: false },
+];
+
+const makeIcon = (available, selected) =>
+  L.divIcon({
+    className: "",
+    html: `<div style="
+      width:${selected ? 42 : 36}px;height:${selected ? 42 : 36}px;
+      background:${available < 10 ? "#f87171" : "#F17300"};
+      border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:800;color:#fff;font-size:13px;
+      font-family:Inter,sans-serif;
+      box-shadow:0 0 20px ${available < 10 ? "rgba(248,113,113,0.5)" : "rgba(241,115,0,0.5)"};
+      border:${selected ? 3 : 2.5}px solid rgba(255,255,255,0.8);
+    ">P</div>`,
+    iconSize: [selected ? 42 : 36, selected ? 42 : 36],
+    iconAnchor: [selected ? 21 : 18, selected ? 21 : 18],
+    popupAnchor: [0, -22],
+  });
 
 const calcHours = (from, to) => {
   const [fH, fM] = from.split(":").map(Number);
@@ -23,19 +49,31 @@ const fmtDate = (iso) => {
 };
 
 export default function ReservePage({ setToast }) {
-  const [step, setStep]           = useState(1);
+  const [step, setStep]             = useState(1);
   const [selectedId, setSelectedId] = useState(null);
-  const [plate, setPlate]         = useState("");
-  const [date, setDate]           = useState("2026-04-20");
-  const [timeFrom, setTimeFrom]   = useState("09:00");
-  const [timeTo, setTimeTo]       = useState("17:00");
-  const [payMethod, setPayMethod] = useState("blik");
-  const [blik, setBlik]           = useState(["", "", "", "", "", ""]);
+  const [search, setSearch]         = useState("");
+  const [vehicleMode, setVehicleMode] = useState("saved");
+  const [selectedVehicleId, setSelectedVehicleId] = useState(MOCK_VEHICLES[0]?.id || null);
+  const [plate, setPlate]           = useState("");
+  const [date, setDate]             = useState("2026-04-20");
+  const [timeFrom, setTimeFrom]     = useState("09:00");
+  const [timeTo, setTimeTo]         = useState("17:00");
+  const [payMethod, setPayMethod]   = useState("blik");
+  const [blik, setBlik]             = useState(["", "", "", "", "", ""]);
 
-  const parking  = MOCK_PARKINGS.find((p) => p.id === selectedId);
-  const hours    = calcHours(timeFrom, timeTo);
-  const total    = Math.round(hours * (parking?.price || 0));
-  const loyalty  = Math.round(total * 0.2);
+  const filteredParkings = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return MOCK_PARKINGS;
+    return MOCK_PARKINGS.filter((p) =>
+      `${p.name} ${p.address}`.toLowerCase().includes(query)
+    );
+  }, [search]);
+
+  const parking = MOCK_PARKINGS.find((p) => p.id === selectedId);
+  const selectedVehicle = MOCK_VEHICLES.find((v) => v.id === selectedVehicleId);
+  const activePlate = vehicleMode === "saved" ? selectedVehicle?.plate || "" : plate;
+  const hours = calcHours(timeFrom, timeTo);
+  const total = Math.round(hours * (parking?.price || 0));
 
   const handleBlikDigit = (i, val) => {
     if (!/^\d?$/.test(val)) return;
@@ -48,6 +86,9 @@ export default function ReservePage({ setToast }) {
   const handleConfirm = () => {
     setStep(1);
     setSelectedId(null);
+    setSearch("");
+    setVehicleMode("saved");
+    setSelectedVehicleId(MOCK_VEHICLES[0]?.id || null);
     setPlate("");
     setBlik(["", "", "", "", "", ""]);
     setToast("✓ Rezerwacja potwierdzona! Szlaban otworzy się automatycznie.");
@@ -71,13 +112,13 @@ export default function ReservePage({ setToast }) {
         <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>Podsumowanie</div>
         <div style={{ fontSize: 13, color: "var(--text2)" }}>
           {[
-            ["Parking",  parking?.name || "—"],
-            ["Data",     fmtDate(date) || "—"],
-            ["Godziny",  hours > 0 ? `${timeFrom} – ${timeTo}` : "—"],
-            ["Czas",     hours > 0 ? `${hours} h` : "—"],
-            ["Tablica",  plate || "—"],
+            ["Parking", parking?.name || "—"],
+            ["Data", fmtDate(date) || "—"],
+            ["Godziny", hours > 0 ? `${timeFrom} – ${timeTo}` : "—"],
+            ["Czas", hours > 0 ? `${hours} h` : "—"],
+            ["Tablica", activePlate || "—"],
           ].map(([k, v]) => (
-            <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
+            <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "5px 0", borderBottom: "1px solid var(--border)" }}>
               <span>{k}</span>
               <span style={{ color: "var(--text)", fontWeight: 500, fontFamily: k === "Tablica" ? "'Space Mono',monospace" : "inherit", fontSize: k === "Tablica" ? 12 : 13 }}>{v}</span>
             </div>
@@ -90,15 +131,9 @@ export default function ReservePage({ setToast }) {
           </div>
         </div>
       </div>
-      {loyalty > 0 && (
-        <div style={{ padding: "10px 14px", background: "var(--accent-bg)", border: "1px solid var(--accent-border)", borderRadius: 8, fontSize: 12, color: "var(--accent)", display: "flex", gap: 6, alignItems: "center" }}>
-          <I.Heart /> +{loyalty} punktów lojalnościowych
-        </div>
-      )}
     </div>
   );
 
-  /* ── Step 1: choose parking ── */
   if (step === 1) return (
     <div className="fin">
       <div className="sh">
@@ -108,11 +143,70 @@ export default function ReservePage({ setToast }) {
         </div>
       </div>
       <StepBar current={1} />
-      <div className="card-grid">
-        {MOCK_PARKINGS.map((p) => (
-          <PCard key={p.id} p={p} selected={selectedId === p.id} onClick={() => setSelectedId(p.id)} />
-        ))}
+
+      <div className="reserve-search">
+        <I.MapPin />
+        <input
+          className="fi"
+          placeholder="Szukaj po nazwie, dzielnicy lub adresie"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
       </div>
+
+      <div className="reserve-pick-layout">
+        <div className="reserve-list">
+          {filteredParkings.length > 0 ? (
+            filteredParkings.map((p) => (
+              <PCard key={p.id} p={p} selected={selectedId === p.id} onClick={() => setSelectedId(p.id)} />
+            ))
+          ) : (
+            <div className="empty">
+              <div className="empty-ic"><I.MapPin /></div>
+              <h3>Brak parkingów</h3>
+              <p>Zmień frazę wyszukiwania albo wybierz parking z mapy.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="reserve-map">
+          <MapContainer
+            center={parking?.coords || [52.2297, 21.0122]}
+            zoom={12}
+            style={{ height: "100%", width: "100%" }}
+            zoomControl={true}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              subdomains="abcd"
+              maxZoom={20}
+            />
+            {MOCK_PARKINGS.map((p) => (
+              <Marker
+                key={p.id}
+                position={p.coords}
+                icon={makeIcon(p.available, selectedId === p.id)}
+                eventHandlers={{ click: () => setSelectedId(p.id) }}
+              >
+                <Popup>
+                  <div style={{ fontFamily: "Inter,sans-serif", minWidth: 160 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{p.name}</div>
+                    <div style={{ fontSize: 11, color: "#666", marginBottom: 6 }}>{p.address}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                      <span style={{ color: p.available < 10 ? "#ef4444" : "#22c55e", fontWeight: 600 }}>
+                        {p.available} wolnych
+                      </span>
+                      <span style={{ color: "#F17300", fontWeight: 700 }}>{p.price} zł/h</span>
+                    </div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        </div>
+      </div>
+
       <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
         <button className="btn btn-a" disabled={!selectedId} onClick={() => setStep(2)}>
           Dalej <I.Arr />
@@ -121,7 +215,6 @@ export default function ReservePage({ setToast }) {
     </div>
   );
 
-  /* ── Step 2: details + live summary ── */
   if (step === 2) return (
     <div className="fin">
       <button className="btn btn-o btn-sm" style={{ marginBottom: 16 }} onClick={() => setStep(1)}>
@@ -134,15 +227,45 @@ export default function ReservePage({ setToast }) {
           <p className="desc">{parking?.name} · {parking?.price} zł/h</p>
 
           <div className="fg">
-            <label className="fl">Numer rejestracyjny</label>
-            <input
-              className="fi"
-              placeholder="np. WA 12345"
-              value={plate}
-              onChange={(e) => setPlate(e.target.value.toUpperCase())}
-              style={{ fontFamily: "'Space Mono',monospace", letterSpacing: 1 }}
-            />
+            <label className="fl">Pojazd</label>
+            <div className="vehicle-mode">
+              <button className={vehicleMode === "saved" ? "on" : ""} onClick={() => setVehicleMode("saved")}>
+                Z konta
+              </button>
+              <button className={vehicleMode === "manual" ? "on" : ""} onClick={() => setVehicleMode("manual")}>
+                Wpisz ręcznie
+              </button>
+            </div>
           </div>
+
+          {vehicleMode === "saved" ? (
+            <div className="vehicle-list">
+              {MOCK_VEHICLES.map((vehicle) => (
+                <button
+                  key={vehicle.id}
+                  className={`vehicle-card ${selectedVehicleId === vehicle.id ? "on" : ""}`}
+                  onClick={() => setSelectedVehicleId(vehicle.id)}
+                >
+                  <span>
+                    <strong>{vehicle.name}</strong>
+                    {vehicle.primary && <small>Główny</small>}
+                  </span>
+                  <span className="vehicle-plate">{vehicle.plate}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="fg">
+              <label className="fl">Numer rejestracyjny</label>
+              <input
+                className="fi"
+                placeholder="np. WA 12345"
+                value={plate}
+                onChange={(e) => setPlate(e.target.value.toUpperCase())}
+                style={{ fontFamily: "'Space Mono',monospace", letterSpacing: 1 }}
+              />
+            </div>
+          )}
 
           <div className="fg">
             <label className="fl">Data</label>
@@ -171,7 +294,7 @@ export default function ReservePage({ setToast }) {
             <div />
             <button
               className="btn btn-a"
-              disabled={!plate || hours <= 0}
+              disabled={!activePlate || hours <= 0}
               onClick={() => setStep(3)}
             >
               Przejdź do płatności <I.Arr />
@@ -184,7 +307,6 @@ export default function ReservePage({ setToast }) {
     </div>
   );
 
-  /* ── Step 3: payment ── */
   return (
     <div className="fin">
       <button className="btn btn-o btn-sm" style={{ marginBottom: 16 }} onClick={() => setStep(2)}>
@@ -198,9 +320,9 @@ export default function ReservePage({ setToast }) {
 
           <div className="pay-methods">
             {[
-              { id: "blik",  icon: "📱", label: "BLIK" },
-              { id: "card",  icon: "💳", label: "Karta" },
-              { id: "gpay",  icon: "G",  label: "Google Pay", isG: true },
+              { id: "blik", icon: "B", label: "BLIK" },
+              { id: "card", icon: "💳", label: "Karta" },
+              { id: "gpay", icon: "G", label: "Google Pay", isG: true },
             ].map((m) => (
               <div
                 key={m.id}
