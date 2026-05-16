@@ -547,7 +547,9 @@ PATCH  /admin/api/parkings/{id}/config  # konfiguracja podziału miejsc
 
 ## 10. Stan implementacji (maj 2026)
 
-### Gotowe (frontend prototype)
+### Gotowe (frontend prototype — MOCKUP)
+> **WAŻNE:** Obecny frontend to mockup pokazowy dla prowadzącego — pokazuje jak ma wyglądać aplikacja. Będzie wymagał przepisania przy właściwej implementacji.
+
 - [x] Landing page z mockowym logowaniem
 - [x] Nav z zakładkami (strona główna / zarezerwuj / moje rezerwacje / mapa / kontakt)
 - [x] 3-krokowy wizard rezerwacji (wybór parkingu, szczegóły, płatność BLIK/karta/GPay)
@@ -572,7 +574,7 @@ PATCH  /admin/api/parkings/{id}/config  # konfiguracja podziału miejsc
 - [ ] PostgreSQL schema migration (Flyway/Liquibase)
 - [ ] OCR serwis (Python/FastAPI + OpenCV/EasyOCR)
 - [ ] Integracja fizycznego szlabanu z API
-- [ ] Płatności (BLIK, karta — provider)
+- [ ] Płatności (BLIK, karta, gotówka — provider)
 - [ ] Email z kodem rezerwacji (12 znaków)
 - [ ] Panel admina (/admin — osobna ścieżka, email+bcrypt)
 - [ ] Overtime detection + powiadomienia
@@ -580,7 +582,60 @@ PATCH  /admin/api/parkings/{id}/config  # konfiguracja podziału miejsc
 
 ---
 
-## 11. Architektura backendu Java (Spring Boot)
+## 11. Lista zmian do wprowadzenia w UI (zaplanowane)
+
+### Strona przed zalogowaniem (Landing)
+- [ ] Usunąć sekcję "Punkty lojalnościowe" z features
+- [ ] Zmienić "Mam parking" → "Dołącz z parkingiem" i przenieść wyżej (zamiast przycisku w prawym górnym rogu)
+- [ ] Podstrona przed logowaniem = landing/marketing; dashboard dopiero po zalogowaniu
+- [ ] Zaimplementować prawdziwe logowanie Google OAuth2 (zamiast mockowego `setUser`)
+
+### Strona główna po zalogowaniu (HomePage)
+- [ ] Usunąć kartę "Automatyczny wjazd"
+- [ ] Usunąć kartę "Program lojalnościowy"
+
+### Strona Zarezerwuj (ReservePage)
+- [ ] Dodać wyszukiwarkę parkingów (po nazwie / mieście)
+- [ ] Wbudować mapę parkingów bezpośrednio w tę stronę
+- [ ] Usunąć osobną zakładkę "Mapa parkingów" z nawigacji
+
+### Menu użytkownika (Nav — user pill)
+- [ ] Dodać pozycję "Dodaj pojazd" obok "Ustawienia" i "Wyloguj się"
+
+### Rezerwacja
+- [ ] Możliwość wyboru pojazdu już zapisanego w koncie (zamiast tylko ręcznego wpisywania tablicy)
+
+### Panel admina / właściciela (Dashboard + JoinPage)
+- [ ] Przy dodawaniu parkingu: usunąć "Podgląd miejsc" (wizualną siatkę)
+- [ ] Liczbę miejsc przenieść do sekcji danych (nie osobny krok)
+- [ ] Dodać podział: ile miejsc na rezerwacje przez apkę vs. ile "z drogi" (walk-in)
+- [ ] W dashboardzie: usunąć "Punkty lojalnościowe" ze statystyk
+- [ ] Zmienić "Zajętość" na lepsze określenie (np. "Obłożenie")
+- [ ] Usunąć mapę miejsc (wizualną siatkę spotów)
+- [ ] Zmienić "Konserwacja miejsc" → "Zmień podział miejsc" (rezerwacje z apki / walk-in)
+
+---
+
+## 12. Zasady płatności i wymagania prawne
+
+- **Gotówka jest obowiązkowa** — wymóg prawny, parkomat musi akceptować gotówkę
+- **Faktury** — użytkownicy mają prawo żądać faktury za parkowanie
+- Metody płatności: BLIK, karta (terminal), gotówka (parkomat), przelew
+- Płatność z góry dla rezerwacji online; przy wyjeździe dla walk-in i overtime
+
+---
+
+## 13. Wymagania projektowe / zaliczeniowe
+
+- **Design:** propozycja interfejsu, kilka screenów, dokumentacja decyzji projektowych (co i dlaczego wybraliśmy)
+- **Okrojona funkcjonalność na zaliczenie:** 1–2 rzeczy działające end-to-end, np.:
+  - Encje i relacje w bazie (JPA entities + migracja)
+  - Podstawowe tworzenie użytkowników (rejestracja/logowanie)
+- Pełna funkcjonalność (OCR, szlaban, płatności) — docelowo, nie wymóg zaliczenia
+
+---
+
+## 14. Architektura backendu Java (Spring Boot)
 
 Źródło: diagram UML PlantUML `parkuj_my_full`.
 
@@ -834,7 +889,7 @@ ParkingLotService → PricingPlanRepository
 
 ---
 
-## 12. Konwencje i notatki
+## 15. Konwencje i notatki
 
 - Wszystkie kwoty w PLN (decimal 10,2)
 - Czas w UTC (timestamp), wyświetlanie konwertowane na strefę klienta
