@@ -1096,12 +1096,13 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 420px;
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
 }
 .reserve-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
+  align-content: start;
 }
 .reserve-map {
   min-height: 460px;
