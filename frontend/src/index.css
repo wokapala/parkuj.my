@@ -64,6 +64,7 @@ body {
   cursor: pointer;
   letter-spacing: -0.5px;
   flex-shrink: 0;
+  text-decoration: none;
 }
 .logo .dot { color: var(--accent) }
 
@@ -83,6 +84,7 @@ body {
   position: relative;
   transition: color var(--tr);
   white-space: nowrap;
+  text-decoration: none;
 }
 .tab:hover { color: var(--text) }
 .tab.on { color: var(--accent) }
@@ -162,6 +164,7 @@ body {
   width: 100%;
   text-align: left;
   transition: all 0.15s;
+  text-decoration: none;
 }
 .mob-tab:hover { background: var(--bg3); color: var(--text) }
 .mob-tab.on { background: var(--accent-bg); color: var(--accent) }
@@ -446,6 +449,7 @@ body {
   transition: all var(--tr);
   border: none;
   letter-spacing: -0.2px;
+  text-decoration: none;
 }
 .btn-a { background: var(--accent); color: #fff }
 .btn-a:hover {

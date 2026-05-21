@@ -1,7 +1,7 @@
 import { useState } from "react";
 import * as I from "../icons";
 
-export default function Nav({ page, setPage, user, setUser, setRole, role, showMenu, setShowMenu }) {
+export default function Nav({ page, setPage, pagePaths, user, setUser, setRole, role, showMenu, setShowMenu }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const tabs = [
@@ -11,7 +11,8 @@ export default function Nav({ page, setPage, user, setUser, setRole, role, showM
     { id: "contact",      label: "Kontakt",          icon: <I.Mail /> },
   ];
 
-  const navigate = (id) => {
+  const navigate = (id, event) => {
+    event?.preventDefault();
     setPage(id);
     setMobileOpen(false);
   };
@@ -19,31 +20,37 @@ export default function Nav({ page, setPage, user, setUser, setRole, role, showM
   return (
     <nav className="nav">
       <div className="nav-in">
-        <div className="logo" onClick={() => setPage(user ? "home" : "landing")}>
+        <a
+          className="logo"
+          href={pagePaths[user ? "home" : "landing"]}
+          onClick={(e) => navigate(user ? "home" : "landing", e)}
+        >
           <I.Car />
           <span style={{ marginLeft: 7 }}>parkuj</span>
           <span className="dot">.my</span>
-        </div>
+        </a>
 
         {/* Desktop tabs */}
         {user ? (
           <div className="tabs">
             {tabs.map((t) => (
-              <button
+              <a
                 key={t.id}
                 className={`tab ${page === t.id ? "on" : ""}`}
-                onClick={() => navigate(t.id)}
+                href={pagePaths[t.id]}
+                onClick={(e) => navigate(t.id, e)}
               >
                 {t.icon}{t.label}
-              </button>
+              </a>
             ))}
             {role === "owner" && (
-              <button
+              <a
                 className={`tab ${page === "dashboard" ? "on" : ""}`}
-                onClick={() => navigate("dashboard")}
+                href={pagePaths.dashboard}
+                onClick={(e) => navigate("dashboard", e)}
               >
                 <I.Dash />Panel zarządzania
-              </button>
+              </a>
             )}
           </div>
         ) : (
@@ -97,12 +104,13 @@ export default function Nav({ page, setPage, user, setUser, setRole, role, showM
               </div>
             </>
           ) : (
-            <button
+            <a
               className="btn btn-a btn-sm"
-              onClick={() => setPage("auth")}
+              href={pagePaths.auth}
+              onClick={(e) => navigate("auth", e)}
             >
               Zaloguj się
-            </button>
+            </a>
           )}
         </div>
       </div>
@@ -111,21 +119,23 @@ export default function Nav({ page, setPage, user, setUser, setRole, role, showM
       {user && (
         <div className={`mob-nav ${mobileOpen ? "open" : ""}`}>
           {tabs.map((t) => (
-            <button
+            <a
               key={t.id}
               className={`mob-tab ${page === t.id ? "on" : ""}`}
-              onClick={() => navigate(t.id)}
-            >
-              {t.icon}{t.label}
-            </button>
+              href={pagePaths[t.id]}
+              onClick={(e) => navigate(t.id, e)}
+              >
+                {t.icon}{t.label}
+            </a>
           ))}
           {role === "owner" && (
-            <button
+            <a
               className={`mob-tab ${page === "dashboard" ? "on" : ""}`}
-              onClick={() => navigate("dashboard")}
+              href={pagePaths.dashboard}
+              onClick={(e) => navigate("dashboard", e)}
             >
               <I.Dash />Panel zarządzania
-            </button>
+            </a>
           )}
         </div>
       )}

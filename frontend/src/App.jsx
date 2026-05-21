@@ -10,12 +10,47 @@ import Dashboard from "./components/Dashboard";
 import ContactPage from "./components/ContactPage";
 import { Check } from "./icons";
 
+const PAGE_PATHS = {
+  landing: "/",
+  auth: "/auth",
+  home: "/home",
+  reserve: "/reservation",
+  reservations: "/reservations",
+  join: "/join",
+  dashboard: "/dashboard",
+  contact: "/contact",
+};
+
+const PATH_PAGES = Object.fromEntries(
+  Object.entries(PAGE_PATHS).map(([page, path]) => [path, page])
+);
+
+const getPageFromPath = () => PATH_PAGES[window.location.pathname] || "landing";
+
 export default function App() {
-  const [page, setPage]           = useState("landing");
+  const [page, setPageState]      = useState(getPageFromPath);
   const [user, setUser]           = useState(null);
   const [role, setRole]           = useState("customer");
   const [showMenu, setShowMenu]   = useState(false);
   const [toast, setToast]         = useState(null);
+
+  const setPage = (nextPage, options = {}) => {
+    const path = PAGE_PATHS[nextPage] || PAGE_PATHS.landing;
+    const currentPath = window.location.pathname;
+
+    setPageState(nextPage);
+
+    if (path !== currentPath) {
+      const method = options.replace ? "replaceState" : "pushState";
+      window.history[method]({}, "", path);
+    }
+  };
+
+  useEffect(() => {
+    const syncPageFromPath = () => setPageState(getPageFromPath());
+    window.addEventListener("popstate", syncPageFromPath);
+    return () => window.removeEventListener("popstate", syncPageFromPath);
+  }, []);
 
   useEffect(() => {
     if (toast) {
@@ -31,7 +66,9 @@ export default function App() {
   }, [showMenu]);
 
   useEffect(() => {
-    if (!user && page !== "landing" && page !== "join" && page !== "auth") setPage("landing");
+    if (!user && page !== "landing" && page !== "join" && page !== "auth") {
+      setPage("landing", { replace: true });
+    }
   }, [user, page]);
 
   const renderPage = () => {
@@ -53,6 +90,7 @@ export default function App() {
       <Nav
         page={page}
         setPage={setPage}
+        pagePaths={PAGE_PATHS}
         user={user}
         setUser={setUser}
         setRole={setRole}
