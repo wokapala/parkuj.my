@@ -88,13 +88,14 @@ Zależności:
 ```
 parkuj.my/
 ├── CLAUDE.md                          ← ten plik (wiki projektu)
+├── ENDPOINT-LIST.md                   ← lista endpointów API zmapowanych do komponentów
 ├── frontend/                          ← React 18 + Vite
 │   ├── index.html
 │   ├── package.json
 │   ├── vite.config.js
 │   └── src/
 │       ├── main.jsx
-│       ├── App.jsx
+│       ├── App.jsx                    ← routing URL-based (history.pushState)
 │       ├── index.css
 │       ├── components/
 │       │   ├── Landing.jsx            ← strona marketingowa (niezalogowany)
@@ -107,9 +108,14 @@ parkuj.my/
 │       │   ├── JoinPage.jsx
 │       │   ├── Dashboard.jsx
 │       │   ├── ContactPage.jsx
-│       │   └── PCard.jsx
+│       │   ├── PCard.jsx
+│       │   ├── UserPage.jsx           ← konto użytkownika + pojazdy (PR #8, Michał)
+│       │   ├── AddCarPage.jsx         ← dodawanie pojazdu (PR #8, Michał)
+│       │   ├── SettingsPage.jsx       ← ustawienia konta (PR #8, Michał)
+│       │   └── ParkingDetailsPage.jsx ← szczegóły parkingu z mapą (PR #8, Michał)
 │       ├── data/
-│       │   └── mockData.js
+│       │   ├── mockData.js
+│       │   └── parkingAvailability.js ← helper do dostępności miejsc
 │       └── icons/
 │           └── index.jsx
 └── backend/                           ← Java 17 + Spring Boot 4.0.6
@@ -128,31 +134,49 @@ parkuj.my/
 > Frontend był wcześniej w `src/` na roota — przeniesiony do `frontend/` w PR #3 (Stanisław Kopeć).
 > Backend: szkielet Maven w PR #3, pełna struktura pakietów w PR #5 (Stanisław Kopeć).
 > AuthPage dodany w PR #7 (Michał Kalinowski).
+> UserPage, AddCarPage, SettingsPage, ParkingDetailsPage, routing URL-based, ENDPOINT-LIST.md — PR #8 (Michał Kalinowski).
 
 ---
 
 ## 5. Architektura frontendu (React prototype)
 
 ### Routing
-Brak react-router. Routing przez `useState` w `App.jsx`:
+Brak react-router. Routing przez `useState` + `history.pushState` w `App.jsx` (PR #8):
 
 ```
-landing → home → reserve / reservations / map / contact
-                 join → dashboard (rola: owner)
+/           landing
+/auth       AuthPage
+/home       HomePage
+/reservation  ReservePage
+/reservations Reservations
+/join       JoinPage
+/dashboard  Dashboard
+/contact    ContactPage
+/settings   SettingsPage
+/user       UserPage
+/add-car    AddCarPage
+/parking/:id  ParkingDetailsPage
 ```
+
+Obsługa przycisku Wstecz w przeglądarce przez `popstate`.
 
 ### Strony i komponenty
 
 | Strona (`page`) | Plik | Opis |
 |-----------------|------|------|
-| `landing` | `Landing.jsx` | Strona startowa, logowanie Google (mock) |
+| `landing` | `Landing.jsx` | Strona startowa (marketing, niezalogowany) |
+| `auth` | `AuthPage.jsx` | Logowanie + rejestracja (email/hasło + Google mock) |
 | `home` | `HomePage.jsx` | Dashboard klienta, popularne parkingi |
-| `reserve` | `ReservePage.jsx` | 3-krokowy wizard: parking → szczegóły → płatność |
+| `reserve` | `ReservePage.jsx` | Wizard rezerwacji z mapą i wyborem pojazdu |
 | `reservations` | `Reservations.jsx` | Lista aktywnych i zakończonych rezerwacji |
-| `map` | `MapPage.jsx` | Mapa Warszawy z markerami (Leaflet) |
+| `map` | `MapPage.jsx` | Mapa Warszawy z markerami (do usunięcia — wg planu) |
 | `join` | `JoinPage.jsx` | 4-krokowy wizard rejestracji właściciela |
 | `dashboard` | `Dashboard.jsx` | Panel właściciela: wykresy, mapa miejsc, szlaban |
 | `contact` | `ContactPage.jsx` | Formularz kontaktowy + FAQ (accordion) |
+| `user` | `UserPage.jsx` | Konto użytkownika: profil + zarządzanie pojazdami |
+| `addCar` | `AddCarPage.jsx` | Formularz dodawania pojazdu |
+| `settings` | `SettingsPage.jsx` | Ustawienia konta, powiadomienia, bezpieczeństwo |
+| `parkingDetails` | `ParkingDetailsPage.jsx` | Szczegóły parkingu z mapą i dostępnością |
 
 ### Komponenty współdzielone
 - `Nav.jsx` — pasek nawigacyjny, hamburger mobile, user pill z menu
@@ -563,6 +587,20 @@ PATCH  /admin/api/parkings/{id}/config  # konfiguracja podziału miejsc
 - [x] Panel właściciela (wykresy, mapa miejsc, sterowanie szlabanem)
 - [x] Wizard dołączania z parkingiem (4 kroki)
 - [x] Strona kontaktowa z FAQ
+- [x] **UserPage** (`UserPage.jsx`) — konto użytkownika (PR #8, Michał):
+  - lista pojazdów, ustawienie głównego, usuwanie
+  - blokada usunięcia pojazdu z aktywną rezerwacją
+- [x] **AddCarPage** (`AddCarPage.jsx`) — dodawanie pojazdu (PR #8, Michał):
+  - tablica + kod kraju (PL/DE/CZ/SK/UA), walidacja unikalności pary
+  - checkbox "ustaw jako główny"
+- [x] **SettingsPage** (`SettingsPage.jsx`) — ustawienia konta (PR #8, Michał):
+  - edycja imienia, emaila, telefonu
+  - preferencje powiadomień (email, SMS, przypomnienia)
+  - sekcja bezpieczeństwa (Google OAuth placeholder, zmiana hasła)
+  - domyślna metoda płatności
+- [x] **ParkingDetailsPage** (`ParkingDetailsPage.jsx`) — szczegóły parkingu z mapą
+- [x] Routing URL-based (`/home`, `/reservation`, `/user`, `/add-car`, itp.) — `history.pushState`
+- [x] `ENDPOINT-LIST.md` — lista endpointów API zmapowanych do komponentów (PR #8, Michał)
 
 ### Backend — struktura (PR #5, Stanisław Kopeć)
 > Wszystkie pliki to **szkielety** — klasy/interfejsy z właściwymi adnotacjami, ale bez logiki biznesowej.
