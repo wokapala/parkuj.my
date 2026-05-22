@@ -1,12 +1,15 @@
 package my.parkuj.application.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
+import java.util.List;
+import java.util.Optional;
 import my.parkuj.application.model.Vehicle;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@Repository
-public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
+public interface VehicleRepository extends JpaRepository<Vehicle, Integer> {
 
+    Optional<Vehicle> findByVehicleIdAndCustomerCustomerId(Integer vehicleId, Integer customerId);
+
+    List<Vehicle> findByCustomerCustomerIdOrderByPrimaryVehicleDescPlateNumberAsc(Integer customerId);
+
+    boolean existsByPlateNumberAndCountryCode(String plateNumber, String countryCode);
 }
-

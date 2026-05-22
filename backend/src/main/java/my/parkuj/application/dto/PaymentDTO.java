@@ -8,6 +8,7 @@ import my.parkuj.application.enums.PaymentStatus;
 
 public class PaymentDTO {
     private Long id;
+    private Integer reservationId;
     private BigDecimal amount;
     private PaymentMethod method;
     private PaymentStatus status;
@@ -15,6 +16,8 @@ public class PaymentDTO {
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    public Integer getReservationId() { return reservationId; }
+    public void setReservationId(Integer reservationId) { this.reservationId = reservationId; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public PaymentMethod getMethod() { return method; }

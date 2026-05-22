@@ -1,12 +1,10 @@
 package my.parkuj.application.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
+import java.util.Optional;
 import my.parkuj.application.model.PricingPlan;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-@Repository
-public interface PricingPlanRepository extends JpaRepository<PricingPlan, Long> {
+public interface PricingPlanRepository extends JpaRepository<PricingPlan, Integer> {
 
+    Optional<PricingPlan> findFirstByParkingLotParkingLotIdAndValidToIsNullOrderByValidFromDesc(Integer parkingLotId);
 }
-
