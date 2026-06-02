@@ -33,6 +33,11 @@ public class Customer {
 
     private String phone;
 
+    // Hash bcrypt hasła dla rejestracji email+hasło.
+    // Nullable — klienci logujący się przez Google OAuth nie mają hasła.
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     @Column(nullable = false)
     private String status = "ACTIVE";
 
@@ -77,6 +82,9 @@ public class Customer {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

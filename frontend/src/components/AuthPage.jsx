@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as I from "../icons";
+import { registerCustomer } from "../data/api";
 
 const initialLogin = {
   email: "jan@gmail.com",
@@ -22,6 +23,7 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
   const [login, setLogin] = useState(initialLogin);
   const [register, setRegister] = useState(initialRegister);
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const updateLogin = (key) => (e) => {
     setError("");
@@ -58,7 +60,7 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
     setToast("Zalogowano przez Google.");
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     if (!register.firstName || !register.lastName || !register.email || !register.password) {
       setError("Uzupełnij wymagane pola.");
@@ -77,15 +79,34 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
       return;
     }
 
-    setRole("customer");
-    setUser({
-      name: `${register.firstName} ${register.lastName}`,
-      email: register.email,
-      phone: register.phone,
-      plate: register.plate.toUpperCase(),
-    });
-    setPage("home");
-    setToast("Konto utworzone. Możesz rezerwować miejsce.");
+    setSubmitting(true);
+    setError("");
+    try {
+      // Zapis do bazy przez backend (POST /api/auth/register).
+      const created = await registerCustomer({
+        firstName: register.firstName,
+        lastName: register.lastName,
+        email: register.email,
+        phone: register.phone,
+        plate: register.plate,
+        password: register.password,
+      });
+
+      setRole("customer");
+      setUser({
+        customerId: created?.customerId,
+        name: `${created?.firstName ?? register.firstName} ${created?.lastName ?? register.lastName}`,
+        email: created?.email ?? register.email,
+        phone: created?.phone ?? register.phone,
+        plate: register.plate.toUpperCase(),
+      });
+      setPage("home");
+      setToast("Konto utworzone i zapisane. Możesz rezerwować miejsce.");
+    } catch (err) {
+      setError(err.message || "Rejestracja nie powiodła się. Spróbuj ponownie.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -180,8 +201,8 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
               <input type="checkbox" checked={register.terms} onChange={updateRegister("terms")} />
               <span>Akceptuję regulamin i zgodę na obsługę rezerwacji parkingowych.</span>
             </label>
-            <button className="btn btn-a btn-block" type="submit">
-              Zarejestruj konto <I.Check />
+            <button className="btn btn-a btn-block" type="submit" disabled={submitting}>
+              {submitting ? "Tworzenie konta…" : <>Zarejestruj konto <I.Check /></>}
             </button>
           </form>
         )}

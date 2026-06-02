@@ -645,9 +645,23 @@ PATCH  /admin/api/parkings/{id}/config  # konfiguracja podziału miejsc
 - [x] **Swagger/OpenAPI** — dostępny po uruchomieniu (`/swagger-ui.html`)
 - [x] **ErrorResponseDTO** — ujednolicony format błędów
 
+### Backend — rejestracja email+hasło (E2E, Wojciech Kapała)
+> Pierwsza pełna ścieżka **frontend → backend → PostgreSQL** dla tworzenia konta.
+
+- [x] **AuthController** — `POST /api/auth/register` — działające
+- [x] **AuthService** — walidacja, unikalność emaila (409 CONFLICT), hash bcrypt hasła,
+  zapis `Customer` + opcjonalny pojazd główny z podanej tablicy (transakcyjnie)
+- [x] **Customer** — dodane pole `password_hash` (nullable — Google OAuth bez hasła)
+- [x] **CustomerRepository** — `existsByEmail`, `findByEmail`
+- [x] **RegisterRequestDTO** — firstName, lastName, email, phone, plate, countryCode, password
+- [x] bcrypt przez `spring-security-crypto` (sam moduł krypto, BEZ starter-security —
+  nie aktywuje filtrów, endpointy pozostają otwarte)
+- [x] **Frontend** — `AuthPage.handleRegister` woła `registerCustomer()` (`api.js`),
+  obsługa błędów z backendu, stan `submitting`; po sukcesie rekord widać w bazie
+
 ### Do zrobienia (backend)
-- [ ] CustomerController — logika CRUD
-- [ ] AuthController — Google OAuth2 + JWT
+- [ ] CustomerController — logika CRUD (GET/PUT /me)
+- [ ] AuthController — logowanie (POST /login) + Google OAuth2 + JWT
 - [ ] PaymentController — logika płatności
 - [ ] BarrierController — integracja z OCR
 - [ ] AdminController — panel operatora

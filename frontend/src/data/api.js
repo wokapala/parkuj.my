@@ -32,3 +32,27 @@ export async function fetchParkingLots() {
     return MOCK_PARKINGS;
   }
 }
+
+// Rejestruje nowego klienta w backendzie (POST /api/auth/register).
+// W razie błędu walidacji/konfliktu rzuca Error z komunikatem z backendu,
+// żeby AuthPage mogła go pokazać użytkownikowi.
+export async function registerCustomer(payload) {
+  const response = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    // brak ciała odpowiedzi — zostaw data = null
+  }
+
+  if (!response.ok) {
+    const message = data?.message || `Rejestracja nie powiodła się (HTTP ${response.status}).`;
+    throw new Error(message);
+  }
+  return data;
+}
