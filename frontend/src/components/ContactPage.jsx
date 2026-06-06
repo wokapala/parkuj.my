@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as I from "../icons";
+import { sendContactMessage } from "../data/api";
 
 const FAQ = [
   {
@@ -20,14 +21,61 @@ const FAQ = [
   },
 ];
 
-export default function ContactPage({ setToast }) {
+const INITIAL_FORM = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  subject: "Pytanie ogólne",
+  message: "",
+};
+
+export default function ContactPage({ user, setToast }) {
   const [openFaq, setOpenFaq] = useState(null);
   const [sent, setSent] = useState(false);
+  const [form, setForm] = useState(() => {
+    const [firstName, ...rest] = (user?.name || "").trim().split(/\s+/);
+    return {
+      ...INITIAL_FORM,
+      firstName: firstName || "",
+      lastName: rest.join(" "),
+      email: user?.email || "",
+    };
+  });
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSend = (e) => {
+  const update = (key) => (e) => {
+    setError("");
+    setForm({ ...form, [key]: e.target.value });
+  };
+
+  const handleSend = async (e) => {
     e.preventDefault();
-    setSent(true);
-    setToast("Wiadomość wysłana! Odpowiemy w ciągu 24h.");
+    if (!form.email || !form.message) {
+      setError("Podaj adres e-mail i treść wiadomości.");
+      return;
+    }
+    if (form.message.trim().length < 10) {
+      setError("Treść wiadomości musi mieć co najmniej 10 znaków.");
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      await sendContactMessage(form);
+      setSent(true);
+      setToast("Wiadomość wysłana! Odpowiemy w ciągu 24h.");
+    } catch (err) {
+      setError(err.message || "Nie udało się wysłać wiadomości.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSendAnother = () => {
+    setForm(INITIAL_FORM);
+    setSent(false);
+    setError("");
   };
 
   return (
@@ -49,28 +97,33 @@ export default function ContactPage({ setToast }) {
               </div>
               <h3>Wiadomość wysłana!</h3>
               <p>Odpowiemy na Twój e-mail w ciągu 24 godzin roboczych.</p>
-              <button className="btn btn-o" onClick={() => setSent(false)}>Wyślij kolejną</button>
+              <button className="btn btn-o" onClick={handleSendAnother}>Wyślij kolejną</button>
             </div>
           ) : (
             <form onSubmit={handleSend}>
               <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Wyślij wiadomość</h3>
+              {error && (
+                <div className="auth-error" style={{ marginBottom: 16 }}>
+                  <I.Alert /> {error}
+                </div>
+              )}
               <div className="fr">
                 <div className="fg">
                   <label className="fl">Imię</label>
-                  <input className="fi" placeholder="Jan" required />
+                  <input className="fi" value={form.firstName} onChange={update("firstName")} placeholder="Jan" />
                 </div>
                 <div className="fg">
                   <label className="fl">Nazwisko</label>
-                  <input className="fi" placeholder="Kowalski" required />
+                  <input className="fi" value={form.lastName} onChange={update("lastName")} placeholder="Kowalski" />
                 </div>
               </div>
               <div className="fg">
                 <label className="fl">Adres e-mail</label>
-                <input className="fi" type="email" placeholder="jan@gmail.com" required />
+                <input className="fi" type="email" value={form.email} onChange={update("email")} placeholder="jan@gmail.com" required />
               </div>
               <div className="fg">
                 <label className="fl">Temat</label>
-                <select className="fs">
+                <select className="fs" value={form.subject} onChange={update("subject")}>
                   <option>Problem z rezerwacją</option>
                   <option>Problem z płatnością</option>
                   <option>Błąd szlabanu / wjazd</option>
@@ -80,10 +133,17 @@ export default function ContactPage({ setToast }) {
               </div>
               <div className="fg">
                 <label className="fl">Wiadomość</label>
-                <textarea className="fi" rows={5} placeholder="Opisz swój problem lub pytanie..." required />
+                <textarea
+                  className="fi"
+                  rows={5}
+                  value={form.message}
+                  onChange={update("message")}
+                  placeholder="Opisz swój problem lub pytanie (min. 10 znaków)…"
+                  required
+                />
               </div>
-              <button type="submit" className="btn btn-a btn-block">
-                Wyślij wiadomość <I.Arr />
+              <button type="submit" className="btn btn-a btn-block" disabled={submitting}>
+                {submitting ? "Wysyłanie…" : <>Wyślij wiadomość <I.Arr /></>}
               </button>
             </form>
           )}

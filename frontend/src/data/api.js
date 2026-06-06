@@ -96,6 +96,10 @@ export function updateParkingLotConfig(lotId, payload) {
   });
 }
 
+export function sendContactMessage(payload) {
+  return apiCall("/api/contact", { method: "POST", body: JSON.stringify(payload) });
+}
+
 export function updateCurrentCustomer(customerId, payload) {
   return apiCall(`/api/customers/me?customerId=${customerId}`, {
     method: "PUT",

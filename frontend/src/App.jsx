@@ -132,7 +132,7 @@ export default function App() {
       case "reservations": return <Reservations user={user} setPage={setPage} setToast={setToast} />;
       case "join":         return <JoinPage user={user} setUser={setUser} setPage={setPage} setRole={setRole} />;
       case "dashboard":    return <Dashboard setToast={setToast} />;
-      case "contact":      return <ContactPage setToast={setToast} />;
+      case "contact":      return <ContactPage user={user} setToast={setToast} />;
       case "settings":     return <SettingsPage user={user} setUser={setUser} setToast={setToast} />;
       case "user":         return <UserPage user={user} vehicles={vehicles} setVehicles={setVehicles} setPage={setPage} setToast={setToast} />;
       case "addCar":       return <AddCarPage user={user} vehicles={vehicles} setVehicles={setVehicles} setPage={setPage} setToast={setToast} />;
