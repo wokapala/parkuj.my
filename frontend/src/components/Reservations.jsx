@@ -1,21 +1,65 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as I from "../icons";
-import { MOCK_RESERVATIONS } from "../data/mockData";
+import { fetchReservations, cancelReservation } from "../data/api";
 
 const fmtDate = (iso) => {
+  if (!iso) return "";
   const [y, m, d] = iso.split("-");
   return `${d}.${m}.${y}`;
 };
 
-export default function Reservations({ setPage, setToast }) {
-  const [list, setList]       = useState(MOCK_RESERVATIONS);
-  const [expanded, setExpanded] = useState(null);
+const STATUS_LABEL = {
+  active: "Aktywna",
+  completed: "Zakończona",
+  cancelled: "Anulowana",
+};
 
-  const cancel = (e, id) => {
-    e.stopPropagation();
-    setList((prev) => prev.filter((r) => r.id !== id));
-    setToast("Rezerwacja anulowana.");
+export default function Reservations({ user, setPage, setToast }) {
+  const [list, setList]         = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [expanded, setExpanded] = useState(null);
+  const [filter, setFilter]     = useState("all");
+
+  const refresh = async () => {
+    if (!user?.customerId) { setList([]); setLoading(false); return; }
+    setLoading(true);
+    try {
+      setList(await fetchReservations(user.customerId));
+    } catch {
+      setList([]);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => { refresh(); }, [user?.customerId]);
+
+  const cancel = async (e, id) => {
+    e.stopPropagation();
+    try {
+      await cancelReservation(id, user.customerId);
+      await refresh();
+      setToast("Rezerwacja anulowana.");
+    } catch (err) {
+      setToast(err.message || "Nie udało się anulować rezerwacji.");
+    }
+  };
+
+  const visible = filter === "all" ? list : list.filter((r) => r.status === filter);
+  const countActive = list.filter((r) => r.status === "active").length;
+  const countDone = list.filter((r) => r.status === "completed").length;
+  const countCancelled = list.filter((r) => r.status === "cancelled").length;
+
+  if (loading) return (
+    <div className="fin">
+      <div className="sh">
+        <div>
+          <h2 className="st">Moje rezerwacje</h2>
+          <p className="ss">Wczytywanie…</p>
+        </div>
+      </div>
+    </div>
+  );
 
   if (list.length === 0) return (
     <div className="fin">
@@ -43,14 +87,42 @@ export default function Reservations({ setPage, setToast }) {
       <div className="sh">
         <div>
           <h2 className="st">Moje rezerwacje</h2>
-          <p className="ss">{list.filter((r) => r.status === "active").length} aktywnych · {list.filter((r) => r.status === "completed").length} zakończonych</p>
+          <p className="ss">
+            {countActive} aktywnych · {countDone} zakończonych · {countCancelled} anulowanych
+          </p>
         </div>
         <button className="btn btn-a btn-sm" onClick={() => setPage("reserve")}>
           <I.Plus /> Nowa
         </button>
       </div>
 
-      {list.map((r) => (
+      <div className="reservation-filters" style={{ marginBottom: 16 }}>
+        {[
+          { id: "all", label: `Wszystkie (${list.length})` },
+          { id: "active", label: `Aktywne (${countActive})` },
+          { id: "completed", label: `Zakończone (${countDone})` },
+          { id: "cancelled", label: `Anulowane (${countCancelled})` },
+        ].map((f) => (
+          <button
+            key={f.id}
+            className={`btn btn-sm ${filter === f.id ? "btn-a" : "btn-o"}`}
+            onClick={() => setFilter(f.id)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {visible.length === 0 && (
+        <div className="card">
+          <div className="empty">
+            <div className="empty-ic"><I.List /></div>
+            <p>Brak rezerwacji w tej kategorii.</p>
+          </div>
+        </div>
+      )}
+
+      {visible.map((r) => (
         <div key={r.id}>
           <div
             className={`ri ${expanded === r.id ? "expanded" : ""}`}
@@ -70,7 +142,7 @@ export default function Reservations({ setPage, setToast }) {
               </div>
             </div>
             <span className={`spill ${r.status}`}>
-              {r.status === "active" ? "Aktywna" : "Zakończona"}
+              {STATUS_LABEL[r.status] || r.backendStatus}
             </span>
             <div className="r-price">{r.price} zł</div>
             {r.status === "active" && (
@@ -82,30 +154,21 @@ export default function Reservations({ setPage, setToast }) {
                 <I.X /> Anuluj
               </button>
             )}
-            {r.status === "completed" && (
-              <button
-                className="btn btn-o btn-sm"
-                onClick={(e) => e.stopPropagation()}
-                title="Pobierz paragon"
-              >
-                <I.Download />
-              </button>
-            )}
           </div>
 
           {expanded === r.id && (
             <div className="r-expand">
               <div className="r-expand-item">
-                <strong>{r.address}</strong>
+                <strong>{r.address || "—"}</strong>
                 Adres parkingu
               </div>
               <div className="r-expand-item">
-                <strong>Miejsce {r.spot}</strong>
-                Numer miejsca
+                <strong style={{ fontFamily: "'Space Mono',monospace" }}>{r.code || "—"}</strong>
+                Kod rezerwacji
               </div>
               <div className="r-expand-item">
-                <strong style={{ fontFamily: "'Space Mono',monospace" }}>{r.id}</strong>
-                ID rezerwacji
+                <strong style={{ fontFamily: "'Space Mono',monospace" }}>#{r.id}</strong>
+                ID w bazie
               </div>
             </div>
           )}

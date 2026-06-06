@@ -135,7 +135,7 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
     try {
       const reservation = await createReservation(payload);
       resetWizard();
-      setToast(`✓ Rezerwacja potwierdzona! Kod: ${reservation.reservationCode}`);
+      setToast(`✓ Rezerwacja potwierdzona! Kod: ${reservation.code}`);
       setPage("reservations");
     } catch (err) {
       setSubmitError(err.message || "Nie udało się utworzyć rezerwacji.");

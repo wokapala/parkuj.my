@@ -80,12 +80,39 @@ export async function setPrimaryVehicle(vehicleId, customerId) {
   return mapVehicle(data);
 }
 
-export function fetchReservations(customerId) {
-  return apiCall(`/api/reservations?customerId=${customerId}`);
+// Backend zwraca ReservationResponseDTO z ISO startAt/endAt;
+// UI pracuje na osobnym date / time / status (skompresowanym do 3 grup).
+const ACTIVE_STATUSES = new Set(["PENDING", "CONFIRMED", "ACTIVE"]);
+const mapReservation = (r) => {
+  const start = r.startAt ? new Date(r.startAt) : null;
+  const end = r.endAt ? new Date(r.endAt) : null;
+  const hh = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  let uiStatus = "completed";
+  if (ACTIVE_STATUSES.has(r.status)) uiStatus = "active";
+  else if (r.status === "CANCELLED" || r.status === "EXPIRED") uiStatus = "cancelled";
+  return {
+    id: r.reservationId,
+    code: r.reservationCode,
+    parking: r.parkingLotName,
+    address: r.parkingLotAddress,
+    date: start ? start.toISOString().slice(0, 10) : "",
+    time: start && end ? `${hh(start)}–${hh(end)}` : "",
+    plate: r.plateNumber || "—",
+    price: r.priceEstimated != null ? Number(r.priceEstimated) : 0,
+    status: uiStatus,
+    backendStatus: r.status,
+    spot: r.reservationId ? `${r.reservationId}` : "—",
+  };
+};
+
+export async function fetchReservations(customerId) {
+  const data = await apiCall(`/api/reservations?customerId=${customerId}`);
+  return Array.isArray(data) ? data.map(mapReservation) : [];
 }
 
-export function createReservation(payload) {
-  return apiCall("/api/reservations", { method: "POST", body: JSON.stringify(payload) });
+export async function createReservation(payload) {
+  const data = await apiCall("/api/reservations", { method: "POST", body: JSON.stringify(payload) });
+  return mapReservation(data);
 }
 
 export function cancelReservation(reservationId, customerId) {
