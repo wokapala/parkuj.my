@@ -54,6 +54,20 @@ export function fetchCurrentCustomer(customerId) {
   return apiCall(`/api/customers/me?customerId=${customerId}`);
 }
 
+// Panel admina (oddzielne logowanie, oddzielne endpointy /api/admin/*).
+export function adminLogin(payload) {
+  return apiCall("/api/admin/auth/login", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function fetchAllCustomers() {
+  return apiCall("/api/admin/customers");
+}
+
+export async function fetchAllReservations() {
+  const data = await apiCall("/api/admin/reservations");
+  return Array.isArray(data) ? data.map(mapReservation) : [];
+}
+
 export function updateCurrentCustomer(customerId, payload) {
   return apiCall(`/api/customers/me?customerId=${customerId}`, {
     method: "PUT",

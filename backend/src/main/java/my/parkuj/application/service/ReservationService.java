@@ -105,6 +105,18 @@ public class ReservationService {
             .toList();
     }
 
+    // Dla panelu admina — wszystkie rezerwacje w systemie (najnowsze pierwsze).
+    public List<ReservationResponseDTO> getAllReservations() {
+        return reservationRepository.findAll().stream()
+            .sorted((a, b) -> {
+                if (a.getReservedAt() == null) return 1;
+                if (b.getReservedAt() == null) return -1;
+                return b.getReservedAt().compareTo(a.getReservedAt());
+            })
+            .map(this::toResponse)
+            .toList();
+    }
+
     public ReservationResponseDTO getReservation(Integer customerId, Integer reservationId) {
         ensureCustomerExists(customerId);
         Reservation reservation = reservationRepository.findById(reservationId)

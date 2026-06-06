@@ -12,6 +12,8 @@ import SettingsPage from "./components/SettingsPage";
 import UserPage from "./components/UserPage";
 import AddCarPage from "./components/AddCarPage";
 import ParkingDetailsPage from "./components/ParkingDetailsPage";
+import AdminLoginPage from "./components/AdminLoginPage";
+import AdminDashboard from "./components/AdminDashboard";
 import { Check } from "./icons";
 import { fetchVehicles } from "./data/api";
 
@@ -28,6 +30,8 @@ const PAGE_PATHS = {
   user: "/user",
   addCar: "/add-car",
   parkingDetails: "/parking",
+  adminLogin: "/admin",
+  adminDashboard: "/admin/dashboard",
 };
 
 const PATH_PAGES = Object.fromEntries(
@@ -49,6 +53,9 @@ export default function App() {
   const [parkingId, setParkingId] = useState(getParkingIdFromPath);
   const [user, setUser]           = useState(() => {
     try { return JSON.parse(localStorage.getItem("user")) || null; } catch { return null; }
+  });
+  const [admin, setAdmin]         = useState(() => {
+    try { return JSON.parse(localStorage.getItem("admin")) || null; } catch { return null; }
   });
   const [role, setRole]           = useState("customer");
   const [showMenu, setShowMenu]   = useState(false);
@@ -103,10 +110,18 @@ export default function App() {
   }, [showMenu]);
 
   useEffect(() => {
+    const adminPages = page === "adminLogin" || page === "adminDashboard";
+    if (adminPages) {
+      // Panel admina: jeśli nie zalogowany — wymuś /admin (login),
+      // jeśli zalogowany ale na loginie — przerzuć na dashboard.
+      if (!admin && page === "adminDashboard") setPage("adminLogin", { replace: true });
+      if (admin && page === "adminLogin") setPage("adminDashboard", { replace: true });
+      return;
+    }
     if (!user && page !== "landing" && page !== "join" && page !== "auth") {
       setPage("landing", { replace: true });
     }
-  }, [user, page]);
+  }, [user, admin, page]);
 
   const renderPage = () => {
     switch (page) {
@@ -122,23 +137,29 @@ export default function App() {
       case "user":         return <UserPage user={user} vehicles={vehicles} setVehicles={setVehicles} setPage={setPage} setToast={setToast} />;
       case "addCar":       return <AddCarPage user={user} vehicles={vehicles} setVehicles={setVehicles} setPage={setPage} setToast={setToast} />;
       case "parkingDetails": return <ParkingDetailsPage parkingId={parkingId} setPage={setPage} />;
+      case "adminLogin":     return <AdminLoginPage setAdmin={setAdmin} setPage={setPage} setToast={setToast} />;
+      case "adminDashboard": return <AdminDashboard admin={admin} setAdmin={setAdmin} setPage={setPage} setToast={setToast} />;
       default:             return <Landing setPage={setPage} />;
     }
   };
 
+  const isAdminPage = page === "adminLogin" || page === "adminDashboard";
+
   return (
     <div className="app">
-      <Nav
-        page={page}
-        setPage={setPage}
-        pagePaths={PAGE_PATHS}
-        user={user}
-        setUser={setUser}
-        setRole={setRole}
-        role={role}
-        showMenu={showMenu}
-        setShowMenu={setShowMenu}
-      />
+      {!isAdminPage && (
+        <Nav
+          page={page}
+          setPage={setPage}
+          pagePaths={PAGE_PATHS}
+          user={user}
+          setUser={setUser}
+          setRole={setRole}
+          role={role}
+          showMenu={showMenu}
+          setShowMenu={setShowMenu}
+        />
+      )}
       <main className="main">{renderPage()}</main>
       {toast && (
         <div className="toast">

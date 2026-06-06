@@ -2,15 +2,19 @@ package my.parkuj.application.config;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import my.parkuj.application.enums.AdminRole;
+import my.parkuj.application.model.AdminUser;
 import my.parkuj.application.model.Customer;
 import my.parkuj.application.model.ParkingLot;
 import my.parkuj.application.model.PricingPlan;
 import my.parkuj.application.model.Vehicle;
+import my.parkuj.application.repository.AdminUserRepository;
 import my.parkuj.application.repository.CustomerRepository;
 import my.parkuj.application.repository.ParkingLotRepository;
 import my.parkuj.application.repository.PricingPlanRepository;
 import my.parkuj.application.repository.VehicleRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,17 +24,20 @@ public class DataInitializer implements CommandLineRunner {
     private final VehicleRepository vehicleRepository;
     private final ParkingLotRepository parkingLotRepository;
     private final PricingPlanRepository pricingPlanRepository;
+    private final AdminUserRepository adminUserRepository;
 
     public DataInitializer(
         CustomerRepository customerRepository,
         VehicleRepository vehicleRepository,
         ParkingLotRepository parkingLotRepository,
-        PricingPlanRepository pricingPlanRepository
+        PricingPlanRepository pricingPlanRepository,
+        AdminUserRepository adminUserRepository
     ) {
         this.customerRepository = customerRepository;
         this.vehicleRepository = vehicleRepository;
         this.parkingLotRepository = parkingLotRepository;
         this.pricingPlanRepository = pricingPlanRepository;
+        this.adminUserRepository = adminUserRepository;
     }
 
     @Override
@@ -42,6 +49,20 @@ public class DataInitializer implements CommandLineRunner {
         if (parkingLotRepository.count() == 0) {
             seedParkingLots();
         }
+
+        if (adminUserRepository.count() == 0) {
+            seedDefaultAdmin();
+        }
+    }
+
+    // Domyślny superadmin do panelu — login: admin@parkuj.my, hasło: admin123.
+    private void seedDefaultAdmin() {
+        AdminUser admin = new AdminUser();
+        admin.setEmail("admin@parkuj.my");
+        admin.setPasswordHash(new BCryptPasswordEncoder().encode("admin123"));
+        admin.setRole(AdminRole.SUPERADMIN);
+        admin.setStatus("ACTIVE");
+        adminUserRepository.save(admin);
     }
 
     private void seedCustomerWithVehicle() {

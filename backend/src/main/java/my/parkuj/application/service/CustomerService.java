@@ -22,6 +22,18 @@ public class CustomerService {
         return CustomerDTO.fromEntity(findCustomer(customerId));
     }
 
+    // Dla panelu admina — wszyscy klienci posortowani od najnowszych.
+    public java.util.List<CustomerDTO> getAllCustomers() {
+        return customerRepository.findAll().stream()
+            .sorted((a, b) -> {
+                if (a.getCreatedAt() == null) return 1;
+                if (b.getCreatedAt() == null) return -1;
+                return b.getCreatedAt().compareTo(a.getCreatedAt());
+            })
+            .map(CustomerDTO::fromEntity)
+            .toList();
+    }
+
     @Transactional
     public CustomerDTO updateCurrentCustomer(Integer customerId, CustomerDTO updates) {
         if (updates == null) {
