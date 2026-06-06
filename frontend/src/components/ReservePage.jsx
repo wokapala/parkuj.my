@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -6,6 +6,7 @@ import * as I from "../icons";
 import PCard from "./PCard";
 import { MOCK_PARKINGS } from "../data/mockData";
 import { calcHours, getParkingAvailability } from "../data/parkingAvailability";
+import { fetchParkingLots, createReservation } from "../data/api";
 
 const STEPS = [
   { n: 1, label: "Parking" },
@@ -37,7 +38,7 @@ const fmtDate = (iso) => {
   return `${d}.${m}.${y}`;
 };
 
-export default function ReservePage({ vehicles = [], setPage, setToast }) {
+export default function ReservePage({ user, vehicles = [], setPage, setToast }) {
   const [step, setStep]             = useState(1);
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch]         = useState("");
@@ -49,17 +50,26 @@ export default function ReservePage({ vehicles = [], setPage, setToast }) {
   const [timeTo, setTimeTo]         = useState("17:00");
   const [payMethod, setPayMethod]   = useState("blik");
   const [blik, setBlik]             = useState(["", "", "", "", "", ""]);
+  const [parkings, setParkings]     = useState(MOCK_PARKINGS);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    fetchParkingLots().then((data) => { if (active) setParkings(data); });
+    return () => { active = false; };
+  }, []);
 
   const filteredParkings = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return MOCK_PARKINGS.filter((p) => {
+    return parkings.filter((p) => {
       const matchesQuery = !query || `${p.name} ${p.address}`.toLowerCase().includes(query);
       const hasAvailability = getParkingAvailability(p, date, timeFrom, timeTo) > 0;
       return matchesQuery && hasAvailability;
     });
-  }, [search, date, timeFrom, timeTo]);
+  }, [parkings, search, date, timeFrom, timeTo]);
 
-  const parking = MOCK_PARKINGS.find((p) => p.id === selectedId);
+  const parking = parkings.find((p) => p.id === selectedId);
   const savedVehicles = vehicles.length ? vehicles : [];
   const selectedVehicle = savedVehicles.find((v) => v.id === selectedVehicleId) || savedVehicles[0];
   const activePlate = vehicleMode === "saved" ? selectedVehicle?.plate || "" : plate;
@@ -74,7 +84,7 @@ export default function ReservePage({ vehicles = [], setPage, setToast }) {
     if (val && i < 5) document.getElementById(`blik-${i + 1}`)?.focus();
   };
 
-  const handleConfirm = () => {
+  const resetWizard = () => {
     setStep(1);
     setSelectedId(null);
     setSearch("");
@@ -82,7 +92,56 @@ export default function ReservePage({ vehicles = [], setPage, setToast }) {
     setSelectedVehicleId(savedVehicles[0]?.id || null);
     setPlate("");
     setBlik(["", "", "", "", "", ""]);
-    setToast("✓ Rezerwacja potwierdzona! Szlaban otworzy się automatycznie.");
+    setSubmitError("");
+  };
+
+  const handleConfirm = async () => {
+    if (!user?.customerId) {
+      setSubmitError("Musisz być zalogowany, żeby zarezerwować.");
+      return;
+    }
+    if (!parking) {
+      setSubmitError("Wybierz parking.");
+      return;
+    }
+    if (hours <= 0) {
+      setSubmitError("Godziny rezerwacji są nieprawidłowe.");
+      return;
+    }
+
+    const payload = {
+      customerId: user.customerId,
+      parkingLotId: parking.id,
+      startAt: `${date}T${timeFrom}:00`,
+      endAt: `${date}T${timeTo}:00`,
+    };
+    if (vehicleMode === "saved" && selectedVehicle?.id) {
+      payload.vehicleId = selectedVehicle.id;
+    } else if (vehicleMode === "manual") {
+      const trimmed = plate.trim().replace(/\s+/g, "").toUpperCase();
+      if (!trimmed) {
+        setSubmitError("Podaj numer rejestracyjny.");
+        return;
+      }
+      payload.plateNumber = trimmed;
+      payload.countryCode = "PL";
+    } else {
+      setSubmitError("Wybierz pojazd lub wpisz tablicę ręcznie.");
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const reservation = await createReservation(payload);
+      resetWizard();
+      setToast(`✓ Rezerwacja potwierdzona! Kod: ${reservation.reservationCode}`);
+      setPage("reservations");
+    } catch (err) {
+      setSubmitError(err.message || "Nie udało się utworzyć rezerwacji.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const StepBar = ({ current }) => (
@@ -199,7 +258,7 @@ export default function ReservePage({ vehicles = [], setPage, setToast }) {
               subdomains="abcd"
               maxZoom={20}
             />
-            {MOCK_PARKINGS.map((p) => {
+            {parkings.map((p) => {
               const availability = getParkingAvailability(p, date, timeFrom, timeTo);
               return (
               <Marker
@@ -429,12 +488,19 @@ export default function ReservePage({ vehicles = [], setPage, setToast }) {
             </div>
           )}
 
+          {submitError && (
+            <div className="auth-error" style={{ marginTop: 16 }}>
+              <I.Alert /> {submitError}
+            </div>
+          )}
+
           <button
             className="btn btn-a btn-block"
             style={{ marginTop: 20 }}
             onClick={handleConfirm}
+            disabled={submitting}
           >
-            Zapłać {total} zł i zarezerwuj <I.Check />
+            {submitting ? "Tworzenie rezerwacji…" : <>Zapłać {total} zł i zarezerwuj <I.Check /></>}
           </button>
         </div>
 
