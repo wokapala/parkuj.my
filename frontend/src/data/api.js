@@ -68,6 +68,23 @@ export async function fetchAllReservations() {
   return Array.isArray(data) ? data.map(mapReservation) : [];
 }
 
+export function fetchAllIncidents() {
+  return apiCall("/api/admin/incidents");
+}
+
+export function createIncident(adminId, payload) {
+  return apiCall(`/api/admin/incidents?adminId=${adminId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateIncidentStatus(incidentId, status) {
+  return apiCall(`/api/admin/incidents/${incidentId}/status?status=${status}`, {
+    method: "PATCH",
+  });
+}
+
 export function updateCurrentCustomer(customerId, payload) {
   return apiCall(`/api/customers/me?customerId=${customerId}`, {
     method: "PUT",

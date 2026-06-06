@@ -1,12 +1,12 @@
 package my.parkuj.application.repository;
 
+import java.util.List;
+import my.parkuj.application.model.IncidentReport;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import my.parkuj.application.model.IncidentReport;
-
 @Repository
-public interface IncidentReportRepository extends JpaRepository<IncidentReport, Long> {
+public interface IncidentReportRepository extends JpaRepository<IncidentReport, Integer> {
 
+    List<IncidentReport> findAllByOrderByCreatedAtDesc();
 }
-
