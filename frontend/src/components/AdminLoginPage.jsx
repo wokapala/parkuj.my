@@ -47,7 +47,23 @@ export default function AdminLoginPage({ setAdmin, setPage, setToast }) {
         <h1>Zaloguj się do panelu</h1>
         <p>
           Dostęp tylko dla pracowników parkuj.my. Konta klientów logują się
-          przez stronę <button className="link-inline" onClick={() => setPage("auth")}>logowania użytkownika</button>.
+          przez{" "}
+          <button
+            type="button"
+            onClick={() => setPage("auth")}
+            style={{
+              background: "none",
+              border: "none",
+              padding: 0,
+              color: "var(--accent)",
+              fontWeight: 600,
+              cursor: "pointer",
+              textDecoration: "underline",
+              font: "inherit",
+            }}
+          >
+            stronę logowania użytkownika
+          </button>.
         </p>
       </div>
 
