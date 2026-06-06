@@ -98,7 +98,7 @@ export default function Nav({ page, setPage, pagePaths, user, setUser, setRole, 
                     </button>
                     <button
                       className="umi red"
-                      onClick={() => { localStorage.removeItem("user"); setUser(null); setRole("customer"); setShowMenu(false); setPage("landing"); }}
+                      onClick={() => { localStorage.removeItem("user"); localStorage.removeItem("role"); setUser(null); setRole("customer"); setShowMenu(false); setPage("landing"); }}
                     >
                       <I.Out /> Wyloguj się
                     </button>

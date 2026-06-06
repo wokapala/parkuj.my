@@ -21,26 +21,23 @@ const FAQ = [
   },
 ];
 
-const INITIAL_FORM = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  subject: "Pytanie ogólne",
-  message: "",
+// Buduje wstępne dane formularza z konta zalogowanego użytkownika
+// (imię i email auto-uzupełnione, temat domyślny, treść pusta).
+const buildInitialForm = (user) => {
+  const [firstName, ...rest] = (user?.name || "").trim().split(/\s+/);
+  return {
+    firstName: firstName || "",
+    lastName: rest.join(" "),
+    email: user?.email || "",
+    subject: "Pytanie ogólne",
+    message: "",
+  };
 };
 
 export default function ContactPage({ user, setToast }) {
   const [openFaq, setOpenFaq] = useState(null);
   const [sent, setSent] = useState(false);
-  const [form, setForm] = useState(() => {
-    const [firstName, ...rest] = (user?.name || "").trim().split(/\s+/);
-    return {
-      ...INITIAL_FORM,
-      firstName: firstName || "",
-      lastName: rest.join(" "),
-      email: user?.email || "",
-    };
-  });
+  const [form, setForm] = useState(() => buildInitialForm(user));
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -73,7 +70,7 @@ export default function ContactPage({ user, setToast }) {
   };
 
   const handleSendAnother = () => {
-    setForm(INITIAL_FORM);
+    setForm(buildInitialForm(user));
     setSent(false);
     setError("");
   };

@@ -57,7 +57,11 @@ export default function App() {
   const [admin, setAdmin]         = useState(() => {
     try { return JSON.parse(localStorage.getItem("admin")) || null; } catch { return null; }
   });
-  const [role, setRole]           = useState("customer");
+  const [role, setRoleState]      = useState(() => localStorage.getItem("role") || "customer");
+  const setRole = (newRole) => {
+    setRoleState(newRole);
+    localStorage.setItem("role", newRole);
+  };
   const [showMenu, setShowMenu]   = useState(false);
   const [toast, setToast]         = useState(null);
   const [vehicles, setVehicles]   = useState([]);
@@ -120,8 +124,14 @@ export default function App() {
     }
     if (!user && page !== "landing" && page !== "join" && page !== "auth") {
       setPage("landing", { replace: true });
+      return;
     }
-  }, [user, admin, page]);
+    // Panel właściciela tylko dla roli 'owner' (US-A05). Klient próbujący wejść
+    // przez bezpośredni URL ląduje na stronie głównej.
+    if (page === "dashboard" && role !== "owner") {
+      setPage("home", { replace: true });
+    }
+  }, [user, admin, role, page]);
 
   const renderPage = () => {
     switch (page) {
