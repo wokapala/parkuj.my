@@ -45,7 +45,7 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
   const [vehicleMode, setVehicleMode] = useState("saved");
   const [selectedVehicleId, setSelectedVehicleId] = useState(vehicles[0]?.id || null);
   const [plate, setPlate]           = useState("");
-  const [date, setDate]             = useState("2026-04-20");
+  const [date, setDate]             = useState(() => new Date().toISOString().slice(0, 10));
   const [timeFrom, setTimeFrom]     = useState("09:00");
   const [timeTo, setTimeTo]         = useState("17:00");
   const [payMethod, setPayMethod]   = useState("blik");
