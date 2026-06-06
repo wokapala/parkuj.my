@@ -13,7 +13,7 @@ import UserPage from "./components/UserPage";
 import AddCarPage from "./components/AddCarPage";
 import ParkingDetailsPage from "./components/ParkingDetailsPage";
 import { Check } from "./icons";
-import { MOCK_VEHICLES } from "./data/mockData";
+import { fetchVehicles } from "./data/api";
 
 const PAGE_PATHS = {
   landing: "/",
@@ -53,7 +53,16 @@ export default function App() {
   const [role, setRole]           = useState("customer");
   const [showMenu, setShowMenu]   = useState(false);
   const [toast, setToast]         = useState(null);
-  const [vehicles, setVehicles]   = useState(MOCK_VEHICLES);
+  const [vehicles, setVehicles]   = useState([]);
+
+  useEffect(() => {
+    if (!user?.customerId) { setVehicles([]); return; }
+    let active = true;
+    fetchVehicles(user.customerId)
+      .then((list) => { if (active) setVehicles(list); })
+      .catch(() => { if (active) setVehicles([]); });
+    return () => { active = false; };
+  }, [user?.customerId]);
 
   const setPage = (nextPage, options = {}) => {
     const path =
@@ -111,7 +120,7 @@ export default function App() {
       case "contact":      return <ContactPage setToast={setToast} />;
       case "settings":     return <SettingsPage user={user} setUser={setUser} setToast={setToast} />;
       case "user":         return <UserPage user={user} vehicles={vehicles} setVehicles={setVehicles} setPage={setPage} setToast={setToast} />;
-      case "addCar":       return <AddCarPage vehicles={vehicles} setVehicles={setVehicles} setPage={setPage} setToast={setToast} />;
+      case "addCar":       return <AddCarPage user={user} vehicles={vehicles} setVehicles={setVehicles} setPage={setPage} setToast={setToast} />;
       case "parkingDetails": return <ParkingDetailsPage parkingId={parkingId} setPage={setPage} />;
       default:             return <Landing setPage={setPage} />;
     }

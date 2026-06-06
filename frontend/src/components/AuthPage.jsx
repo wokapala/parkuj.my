@@ -103,14 +103,16 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
         password: register.password,
       });
 
-      setRole("customer");
-      setUser({
+      const userData = {
         customerId: created?.customerId,
         name: `${created?.firstName ?? register.firstName} ${created?.lastName ?? register.lastName}`,
         email: created?.email ?? register.email,
         phone: created?.phone ?? register.phone,
         plate: register.plate.toUpperCase(),
-      });
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
+      setRole("customer");
+      setUser(userData);
       setPage("home");
       setToast("Konto utworzone i zapisane. Możesz rezerwować miejsce.");
     } catch (err) {

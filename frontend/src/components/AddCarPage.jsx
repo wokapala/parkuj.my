@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as I from "../icons";
+import { addVehicle, fetchVehicles } from "../data/api";
 
 const COUNTRIES = [
   { code: "PL", label: "Polska" },
@@ -11,7 +12,7 @@ const COUNTRIES = [
 
 const normalizePlate = (plate) => plate.trim().replace(/\s+/g, " ").toUpperCase();
 
-export default function AddCarPage({ vehicles, setVehicles, setPage, setToast }) {
+export default function AddCarPage({ user, vehicles, setVehicles, setPage, setToast }) {
   const [form, setForm] = useState({
     name: "",
     plate: "",
@@ -19,6 +20,7 @@ export default function AddCarPage({ vehicles, setVehicles, setPage, setToast })
     primary: vehicles.length === 0,
   });
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const update = (key) => (event) => {
     setError("");
@@ -26,41 +28,36 @@ export default function AddCarPage({ vehicles, setVehicles, setPage, setToast })
     setForm({ ...form, [key]: value });
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const plate = normalizePlate(form.plate);
-    const name = form.name.trim() || "Mój pojazd";
 
     if (!plate) {
       setError("Podaj numer rejestracyjny pojazdu.");
       return;
     }
-
-    const alreadyExists = vehicles.some(
-      (vehicle) => vehicle.plate === plate && vehicle.country === form.country
-    );
-
-    if (alreadyExists) {
-      setError("Pojazd z taką tablicą i krajem jest już zapisany.");
+    if (!user?.customerId) {
+      setError("Brak danych zalogowanego użytkownika.");
       return;
     }
 
-    const nextVehicle = {
-      id: Date.now(),
-      name,
-      plate,
-      country: form.country,
-      primary: form.primary || vehicles.length === 0,
-      hasActiveReservation: false,
-    };
-
-    setVehicles(
-      nextVehicle.primary
-        ? vehicles.map((vehicle) => ({ ...vehicle, primary: false })).concat(nextVehicle)
-        : vehicles.concat(nextVehicle)
-    );
-    setToast("Pojazd dodany do konta.");
-    setPage("user");
+    setSubmitting(true);
+    try {
+      await addVehicle({
+        customerId: user.customerId,
+        plateNumber: plate,
+        countryCode: form.country,
+        primaryVehicle: form.primary || vehicles.length === 0,
+      });
+      // Odśwież listę pojazdów ze świeżych danych z backendu (backend ustawia primary i normalizuje pola).
+      setVehicles(await fetchVehicles(user.customerId));
+      setToast("Pojazd dodany do konta.");
+      setPage("user");
+    } catch (err) {
+      setError(err.message || "Nie udało się dodać pojazdu.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -115,8 +112,10 @@ export default function AddCarPage({ vehicles, setVehicles, setPage, setToast })
           </label>
 
           <div className="wt-acts">
-            <button type="button" className="btn btn-o" onClick={() => setPage("user")}>Anuluj</button>
-            <button type="submit" className="btn btn-a">Dodaj pojazd <I.Check /></button>
+            <button type="button" className="btn btn-o" onClick={() => setPage("user")} disabled={submitting}>Anuluj</button>
+            <button type="submit" className="btn btn-a" disabled={submitting}>
+              {submitting ? "Dodawanie…" : <>Dodaj pojazd <I.Check /></>}
+            </button>
           </div>
         </form>
 

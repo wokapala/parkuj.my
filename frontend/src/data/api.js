@@ -50,20 +50,34 @@ export function loginCustomer(payload) {
   return apiCall("/api/auth/login", { method: "POST", body: JSON.stringify(payload) });
 }
 
-export function fetchVehicles(customerId) {
-  return apiCall(`/api/vehicles?customerId=${customerId}`);
+// Backend zwraca VehicleDTO z polami plateNumber/countryCode/primary;
+// UI pracuje na plate/country/primary — mapujemy do wspólnego kształtu.
+const mapVehicle = (v) => ({
+  id: v.id ?? v.vehicleId,
+  plate: v.plateNumber,
+  country: v.countryCode,
+  name: v.name || v.plateNumber,
+  primary: v.primary ?? v.primaryVehicle ?? false,
+  hasActiveReservation: v.hasActiveReservation ?? false,
+});
+
+export async function fetchVehicles(customerId) {
+  const data = await apiCall(`/api/vehicles?customerId=${customerId}`);
+  return Array.isArray(data) ? data.map(mapVehicle) : [];
 }
 
-export function addVehicle(payload) {
-  return apiCall("/api/vehicles", { method: "POST", body: JSON.stringify(payload) });
+export async function addVehicle(payload) {
+  const data = await apiCall("/api/vehicles", { method: "POST", body: JSON.stringify(payload) });
+  return mapVehicle(data);
 }
 
 export function deleteVehicle(vehicleId, customerId) {
   return apiCall(`/api/vehicles/${vehicleId}?customerId=${customerId}`, { method: "DELETE" });
 }
 
-export function setPrimaryVehicle(vehicleId, customerId) {
-  return apiCall(`/api/vehicles/${vehicleId}/primary?customerId=${customerId}`, { method: "PATCH" });
+export async function setPrimaryVehicle(vehicleId, customerId) {
+  const data = await apiCall(`/api/vehicles/${vehicleId}/primary?customerId=${customerId}`, { method: "PATCH" });
+  return mapVehicle(data);
 }
 
 export function fetchReservations(customerId) {
