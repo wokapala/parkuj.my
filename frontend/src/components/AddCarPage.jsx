@@ -47,6 +47,7 @@ export default function AddCarPage({ user, vehicles, setVehicles, setPage, setTo
         customerId: user.customerId,
         plateNumber: plate,
         countryCode: form.country,
+        name: form.name.trim() || null,
         primaryVehicle: form.primary || vehicles.length === 0,
       });
       // Odśwież listę pojazdów ze świeżych danych z backendu (backend ustawia primary i normalizuje pola).

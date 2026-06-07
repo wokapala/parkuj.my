@@ -72,8 +72,8 @@ export default function Nav({ page, setPage, pagePaths, user, setUser, setRole, 
                 onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
               >
                 <div className="pill">
-                  <div className="av">{user.name[0]}</div>
-                  <span>{user.name.split(" ")[0]}</span>
+                  <div className="av">{user.name?.[0] ?? "U"}</div>
+                  <span>{user.name?.split(" ")[0] ?? "Konto"}</span>
                 </div>
 
                 {showMenu && (

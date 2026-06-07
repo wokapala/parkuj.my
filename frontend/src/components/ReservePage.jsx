@@ -74,7 +74,11 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
   const selectedVehicle = savedVehicles.find((v) => v.id === selectedVehicleId) || savedVehicles[0];
   const activePlate = vehicleMode === "saved" ? selectedVehicle?.plate || "" : plate;
   const hours = calcHours(timeFrom, timeTo);
-  const totalRaw = Math.ceil(hours) * (parking?.price || 0);
+  // Backend liczy cenę przez BigDecimal.divide(60, 2, CEILING) — czyli zaokrągla
+  // do 0.01h w górę. Musimy zrobić to samo, inaczej user widzi 8 zł a backend
+  // zapisze 4 zł (przy 30-minutowej rezerwacji).
+  const ceilHours = Math.ceil(hours * 100) / 100;
+  const totalRaw = ceilHours * (parking?.price || 0);
   const total = totalRaw > 0 ? totalRaw.toFixed(2) : 0;
   // Rezerwacja w przeszłości — porównujemy start z bieżącą chwilą.
   const isPastReservation = date && timeFrom
@@ -404,7 +408,7 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
 
           {hours > 0 && (
             <div style={{ padding: "10px 14px", background: "var(--bg3)", borderRadius: 8, fontSize: 13, marginBottom: 18, display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: "var(--text2)" }}>{Math.ceil(hours)} h × {parking?.price} zł</span>
+              <span style={{ color: "var(--text2)" }}>{ceilHours} h × {parking?.price} zł</span>
               <span style={{ fontWeight: 700, color: "var(--accent)", fontFamily: "'Space Mono',monospace" }}>{total} zł</span>
             </div>
           )}

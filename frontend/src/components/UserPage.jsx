@@ -5,6 +5,9 @@ import { fetchVehicles, deleteVehicle, setPrimaryVehicle, fetchCustomerStats } f
 const sortVehicles = (vehicles) =>
   [...vehicles].sort((a, b) => Number(b.primary) - Number(a.primary));
 
+// Backend zapisuje kod ISO 3166-1 alpha-3 (POL/DEU/...) — pokazujemy 2-literowy.
+const COUNTRY_DISPLAY = { POL: "PL", DEU: "DE", CZE: "CZ", SVK: "SK", UKR: "UA" };
+
 export default function UserPage({ user, vehicles, setVehicles, setPage, setToast }) {
   const [customerStats, setCustomerStats] = useState(null);
 
@@ -53,7 +56,7 @@ export default function UserPage({ user, vehicles, setVehicles, setPage, setToas
       </div>
 
       <div className="profile-summary">
-        <div className="profile-avatar">{user?.name?.[0] || "U"}</div>
+        <div className="profile-avatar">{user?.name?.trim()?.[0] || "U"}</div>
         <div>
           <h2>{user?.name || "Użytkownik"}</h2>
           <p>{user?.email || "Brak adresu e-mail"}</p>
@@ -83,7 +86,7 @@ export default function UserPage({ user, vehicles, setVehicles, setPage, setToas
               <div className="manage-vehicle" key={vehicle.id}>
                 <div>
                   <strong>{vehicle.name}</strong>
-                  <span className="vehicle-plate">{vehicle.country} · {vehicle.plate}</span>
+                  <span className="vehicle-plate">{COUNTRY_DISPLAY[vehicle.country] ?? vehicle.country} · {vehicle.plate}</span>
                   {vehicle.hasActiveReservation && <small>Aktywna rezerwacja</small>}
                 </div>
                 <div className="vehicle-actions">

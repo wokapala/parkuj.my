@@ -83,10 +83,9 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
   };
 
   const handleGoogleLogin = () => {
-    setRole("customer");
-    setUser({ name: "Jan Kowalski", email: "jan@gmail.com" });
-    setPage("home");
-    setToast("Zalogowano przez Google.");
+    // Google OAuth jeszcze nie zaimplementowane na backendzie — wcześniejszy mock
+    // ustawiał user bez customerId, przez co rezerwacje / pojazdy się wywalały.
+    setToast("Logowanie Google — wkrótce. Na razie użyj e-maila i hasła.");
   };
 
   const handleRegister = async (e) => {
@@ -174,7 +173,7 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
         {mode === "login" ? (
           <form onSubmit={handleLogin}>
             <button className="btn btn-o btn-block auth-google" type="button" onClick={handleGoogleLogin}>
-              <I.Google /> Zaloguj się przez Google
+              <I.Google /> Zaloguj się przez Google <small style={{ marginLeft: 8, opacity: 0.6, fontSize: 11 }}>(wkrótce)</small>
             </button>
             <div className="auth-divider"><span>lub</span></div>
             <div className="fg">

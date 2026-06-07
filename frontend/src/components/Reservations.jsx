@@ -19,6 +19,7 @@ export default function Reservations({ user, setPage, setToast }) {
   const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState(null);
   const [filter, setFilter]     = useState("all");
+  const [cancellingId, setCancellingId] = useState(null);
 
   const refresh = async () => {
     if (!user?.customerId) { setList([]); setLoading(false); return; }
@@ -36,6 +37,7 @@ export default function Reservations({ user, setPage, setToast }) {
 
   const cancel = async (e, r) => {
     e.stopPropagation();
+    if (cancellingId) return;
     const startTime = r.time ? r.time.split("–")[0] : null;
     if (r.date && startTime) {
       const startDate = new Date(`${r.date}T${startTime}:00`);
@@ -44,12 +46,15 @@ export default function Reservations({ user, setPage, setToast }) {
         return;
       }
     }
+    setCancellingId(r.id);
     try {
       await cancelReservation(r.id, user.customerId);
       await refresh();
       setToast("Rezerwacja anulowana.");
     } catch (err) {
       setToast(err.message || "Nie udało się anulować rezerwacji.");
+    } finally {
+      setCancellingId(null);
     }
   };
 
@@ -157,9 +162,10 @@ export default function Reservations({ user, setPage, setToast }) {
               <button
                 className="btn btn-danger btn-sm"
                 onClick={(e) => cancel(e, r)}
+                disabled={cancellingId === r.id}
                 style={{ marginLeft: 4 }}
               >
-                <I.X /> Anuluj
+                {cancellingId === r.id ? "Anulowanie…" : <><I.X /> Anuluj</>}
               </button>
             )}
           </div>
