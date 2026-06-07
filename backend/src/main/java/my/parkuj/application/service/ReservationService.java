@@ -70,9 +70,7 @@ public class ReservationService {
         Customer customer = customerRepository.findById(request.getCustomerId())
             .orElseThrow(() -> notFound("Nie znaleziono klienta."));
 
-        Vehicle vehicle = vehicleRepository
-            .findByVehicleIdAndCustomerCustomerId(request.getVehicleId(), request.getCustomerId())
-            .orElseThrow(() -> notFound("Nie znaleziono pojazdu przypisanego do tego klienta."));
+        Vehicle vehicle = resolveVehicle(request, customer);
 
         ParkingLot parkingLot = parkingLotRepository.findById(request.getParkingLotId())
             .orElseThrow(() -> notFound("Nie znaleziono parkingu."));
@@ -202,6 +200,41 @@ public class ReservationService {
         return toResponse(cancelled);
     }
 
+    private Vehicle resolveVehicle(ReservationRequestDTO request, Customer customer) {
+        if (request.getVehicleId() != null) {
+            return vehicleRepository
+                .findByVehicleIdAndCustomerCustomerId(request.getVehicleId(), customer.getCustomerId())
+                .orElseThrow(() -> notFound("Nie znaleziono pojazdu przypisanego do tego klienta."));
+        }
+
+        String plate = request.getPlateNumber().trim().replaceAll("\\s+", "").toUpperCase();
+        String country = normalizeCountry(request.getCountryCode());
+
+        return vehicleRepository
+            .findByPlateNumberAndCountryCodeAndCustomerCustomerId(plate, country, customer.getCustomerId())
+            .orElseGet(() -> {
+                Vehicle v = new Vehicle();
+                v.setCustomer(customer);
+                v.setPlateNumber(plate);
+                v.setCountryCode(country);
+                v.setPrimaryVehicle(false);
+                return vehicleRepository.save(v);
+            });
+    }
+
+    private String normalizeCountry(String raw) {
+        if (raw == null || raw.isBlank()) return "POL";
+        String upper = raw.trim().toUpperCase();
+        return switch (upper) {
+            case "PL" -> "POL";
+            case "DE" -> "DEU";
+            case "CZ" -> "CZE";
+            case "SK" -> "SVK";
+            case "UA" -> "UKR";
+            default -> upper.length() == 3 ? upper : "POL";
+        };
+    }
+
     private void validateRequest(ReservationRequestDTO request) {
         if (request == null) {
             throw badRequest("Brak danych rezerwacji.");
@@ -209,8 +242,8 @@ public class ReservationService {
         if (request.getCustomerId() == null) {
             throw badRequest("Brak identyfikatora klienta.");
         }
-        if (request.getVehicleId() == null) {
-            throw badRequest("Brak identyfikatora pojazdu.");
+        if (request.getVehicleId() == null && (request.getPlateNumber() == null || request.getPlateNumber().isBlank())) {
+            throw badRequest("Wybierz pojazd lub podaj tablicę rejestracyjną.");
         }
         if (request.getParkingLotId() == null) {
             throw badRequest("Brak identyfikatora parkingu.");

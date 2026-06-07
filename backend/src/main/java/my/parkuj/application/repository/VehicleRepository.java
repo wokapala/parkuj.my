@@ -12,4 +12,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Integer> {
     List<Vehicle> findByCustomerCustomerIdOrderByPrimaryVehicleDescPlateNumberAsc(Integer customerId);
 
     boolean existsByPlateNumberAndCountryCode(String plateNumber, String countryCode);
+
+    Optional<Vehicle> findByPlateNumberAndCountryCodeAndCustomerCustomerId(String plateNumber, String countryCode, Integer customerId);
 }
