@@ -1,3 +1,5 @@
+// Fallback gdy backend nie odpowiada (initial render, błąd sieci itp.).
+// Po pobraniu z /api/parking-lots ta lista jest zastępowana realnymi danymi.
 export const MOCK_PARKINGS = [
   {
     id: 1,
@@ -53,60 +55,5 @@ export const MOCK_PARKINGS = [
     rating: 3.9,
     img: "🅿️",
     coords: [52.2520, 21.0478],
-  },
-];
-
-export const MOCK_RESERVATIONS = [
-  {
-    id: "R-001",
-    parking: "Centrum Parking",
-    date: "2026-03-24",
-    time: "09:00 - 17:00",
-    plate: "WA 12345",
-    status: "active",
-    price: 64,
-    address: "ul. Marszałkowska 10, Warszawa",
-    spot: "A-12",
-  },
-  {
-    id: "R-002",
-    parking: "PKiN Underground",
-    date: "2026-03-20",
-    time: "14:00 - 18:00",
-    plate: "WA 12345",
-    price: 48,
-    status: "completed",
-    address: "pl. Defilad 1, Warszawa",
-    spot: "B-07",
-  },
-  {
-    id: "R-003",
-    parking: "Galeria Mokotów P1",
-    date: "2026-03-18",
-    time: "10:00 - 12:00",
-    plate: "WA 67890",
-    price: 10,
-    status: "completed",
-    address: "ul. Wołoska 12, Warszawa",
-    spot: "C-03",
-  },
-];
-
-export const MOCK_VEHICLES = [
-  {
-    id: 1,
-    name: "Toyota Corolla",
-    plate: "WA 12345",
-    country: "PL",
-    primary: true,
-    hasActiveReservation: true,
-  },
-  {
-    id: 2,
-    name: "Skoda Octavia",
-    plate: "WA 67890",
-    country: "PL",
-    primary: false,
-    hasActiveReservation: false,
   },
 ];

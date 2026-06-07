@@ -5,8 +5,8 @@ import "leaflet/dist/leaflet.css";
 import * as I from "../icons";
 import PCard from "./PCard";
 import { MOCK_PARKINGS } from "../data/mockData";
-import { calcHours, getParkingAvailability } from "../data/parkingAvailability";
-import { fetchParkingLots, createReservation, confirmReservation } from "../data/api";
+import { calcHours } from "../data/parkingAvailability";
+import { fetchParkingLots, createReservation, confirmReservation, checkAvailability } from "../data/api";
 
 const STEPS = [
   { n: 1, label: "Parking" },
@@ -53,6 +53,9 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
   const [parkings, setParkings]     = useState(MOCK_PARKINGS);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  // Real-time dostępność dla każdego parkingu — pobierana z backendu przy
+  // zmianie daty/godzin. Klucz = parking.id, wartość = AvailabilityDTO.
+  const [availabilityMap, setAvailabilityMap] = useState({});
 
   useEffect(() => {
     let active = true;
@@ -60,14 +63,47 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
     return () => { active = false; };
   }, []);
 
+  // Sprawdź dostępność każdego parkingu dla wybranego terminu (debounce 400 ms).
+  // Bez tego liczniki były generowane lokalnie z pseudolosowej formuły i nie
+  // miały związku z faktycznym stanem bazy.
+  useEffect(() => {
+    if (!date || !timeFrom || !timeTo || !parkings.length) return;
+    const from = `${date}T${timeFrom}:00`;
+    const to   = `${date}T${timeTo}:00`;
+    if (from >= to) { setAvailabilityMap({}); return; }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const entries = await Promise.all(
+        parkings.map((p) =>
+          checkAvailability(p.id, from, to)
+            .then((a) => [p.id, a])
+            .catch(() => [p.id, null])
+        )
+      );
+      if (!cancelled) setAvailabilityMap(Object.fromEntries(entries));
+    }, 400);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [parkings, date, timeFrom, timeTo]);
+
+  // Liczba wolnych miejsc dla parkingu — z backendu jeśli pobrane, w przeciwnym
+  // razie statyczne reservablePlacesCount jako optymistyczny placeholder.
+  const getAvailability = (p) => {
+    const real = availabilityMap[p.id];
+    return real?.availableSpots ?? p.available ?? 0;
+  };
+
   const filteredParkings = useMemo(() => {
     const query = search.trim().toLowerCase();
     return parkings.filter((p) => {
       const matchesQuery = !query || `${p.name} ${p.address}`.toLowerCase().includes(query);
-      const hasAvailability = getParkingAvailability(p, date, timeFrom, timeTo) > 0;
+      // Filtrujemy "brak miejsc" tylko gdy mamy realną odpowiedź z backendu;
+      // dopóki request jest w locie, pokazujemy wszystkie żeby uniknąć błyskania.
+      const real = availabilityMap[p.id];
+      const hasAvailability = real ? real.available : true;
       return matchesQuery && hasAvailability;
     });
-  }, [parkings, search, date, timeFrom, timeTo]);
+  }, [parkings, search, availabilityMap]);
 
   const parking = parkings.find((p) => p.id === selectedId);
   const savedVehicles = vehicles.length ? vehicles : [];
@@ -259,7 +295,7 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
               <PCard
                 key={p.id}
                 p={p}
-                availability={getParkingAvailability(p, date, timeFrom, timeTo)}
+                availability={getAvailability(p)}
                 selected={selectedId === p.id}
                 onClick={() => setSelectedId(p.id)}
                 onDetails={() => setPage("parkingDetails", { parkingId: p.id })}
@@ -288,7 +324,7 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
               maxZoom={20}
             />
             {parkings.map((p) => {
-              const availability = getParkingAvailability(p, date, timeFrom, timeTo);
+              const availability = getAvailability(p);
               return (
               <Marker
                 key={p.id}
