@@ -24,6 +24,7 @@ import my.parkuj.application.repository.PricingPlanRepository;
 import my.parkuj.application.repository.ReservationRepository;
 import my.parkuj.application.repository.VehicleRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -131,7 +132,7 @@ public class ReservationService {
         return toResponse(reservation);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public ReservationResponseDTO confirmReservation(Integer reservationId, String providerReference, String paymentMethod) {
         Reservation reservation = findReservation(reservationId);
         expireIfStale(reservation);
@@ -172,7 +173,7 @@ public class ReservationService {
         }
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = ResponseStatusException.class)
     public ReservationResponseDTO cancelReservation(Integer customerId, Integer reservationId) {
         ensureCustomerExists(customerId);
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -184,6 +185,14 @@ public class ReservationService {
         if (reservation.getStatus() != ReservationStatus.PENDING
             && reservation.getStatus() != ReservationStatus.CONFIRMED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Można anulować tylko rezerwację oczekującą lub potwierdzoną.");
+        }
+
+        // FAQ obiecuje: można anulować do 30 minut przed startem rezerwacji.
+        // Frontend ma walidację, ale backend musi też pilnować — żeby nie szło obejść Swaggerem.
+        if (reservation.getStartAt() != null
+            && Duration.between(LocalDateTime.now(), reservation.getStartAt()).toMinutes() < 30) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Nie można anulować rezerwacji na mniej niż 30 minut przed jej rozpoczęciem.");
         }
 
         reservation.setStatus(ReservationStatus.CANCELLED);
@@ -198,6 +207,18 @@ public class ReservationService {
         });
 
         return toResponse(cancelled);
+    }
+
+    // Scheduler — co 60s zerujemy PENDING-i, które nie zostały opłacone w 15 minut.
+    // Bez tego rezerwacje siedzą wiecznie w PENDING i blokują miejsca.
+    @Scheduled(fixedDelay = 60_000)
+    @Transactional
+    public void expireStalePending() {
+        LocalDateTime now = LocalDateTime.now();
+        for (Reservation r : reservationRepository.findByStatusAndExpiresAtBefore(ReservationStatus.PENDING, now)) {
+            r.setStatus(ReservationStatus.EXPIRED);
+            reservationRepository.save(r);
+        }
     }
 
     private Vehicle resolveVehicle(ReservationRequestDTO request, Customer customer) {

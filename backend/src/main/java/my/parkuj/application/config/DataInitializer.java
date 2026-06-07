@@ -61,30 +61,30 @@ public class DataInitializer implements CommandLineRunner {
             seedDefaultAdmin();
         }
 
-        Customer testCustomer = null;
-        Vehicle testVehicle = null;
-        if (customerRepository.count() == 0) {
+        // Klient testowy — szukamy po e-mailu, tworzymy tylko jeśli brak.
+        Customer testCustomer = customerRepository.findByEmail("test@parkuj.my").orElse(null);
+        if (testCustomer == null) {
             testCustomer = seedCustomerWithVehicle();
-            testVehicle = vehicleRepository.findAll().get(0);
         }
+        Vehicle testVehicle = vehicleRepository
+            .findByCustomerCustomerIdOrderByPrimaryVehicleDescPlateNumberAsc(testCustomer.getCustomerId())
+            .stream().findFirst().orElse(null);
 
-        ParkingLot ownedLot = null;
+        // Publiczne parkingi — seed tylko gdy nic nie ma w bazie.
         if (parkingLotRepository.count() == 0) {
             seedPublicParkingLots();
-            if (testCustomer != null) {
-                ownedLot = seedOwnedParkingLot(testCustomer);
-            }
         }
 
-        if (reservationRepository.count() == 0 && testCustomer != null && testVehicle != null) {
-            if (ownedLot == null) {
-                // Baza ma już parkingi — znajdź owned lot dla klienta testowego.
-                ownedLot = parkingLotRepository.findByOwnerCustomerIdOrderByCreatedAtDesc(testCustomer.getCustomerId())
-                    .stream().findFirst().orElse(null);
-            }
-            if (ownedLot != null) {
-                seedHistoricalReservations(testCustomer, testVehicle, ownedLot);
-            }
+        // Owned lot dla klienta testowego — niezależnie od kolejności inicjalizacji.
+        ParkingLot ownedLot = parkingLotRepository
+            .findByOwnerCustomerIdOrderByCreatedAtDesc(testCustomer.getCustomerId())
+            .stream().findFirst().orElse(null);
+        if (ownedLot == null) {
+            ownedLot = seedOwnedParkingLot(testCustomer);
+        }
+
+        if (reservationRepository.count() == 0 && testVehicle != null) {
+            seedHistoricalReservations(testCustomer, testVehicle, ownedLot);
         }
     }
 

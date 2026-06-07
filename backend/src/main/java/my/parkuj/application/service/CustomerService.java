@@ -41,12 +41,22 @@ public class CustomerService {
         }
         Customer customer = findCustomer(customerId);
 
-        if (notBlank(updates.getFirstName())) customer.setFirstName(updates.getFirstName().trim());
-        if (notBlank(updates.getLastName()))  customer.setLastName(updates.getLastName().trim());
-        if (notBlank(updates.getPhone()))     customer.setPhone(updates.getPhone().trim());
+        // Konwencja: null = nie zmieniaj, "" = wyczyść (user usunął wartość).
+        // Imię i nazwisko muszą zostać niepuste — DB wymaga, nie pozwalamy ich wyzerować.
+        if (updates.getFirstName() != null && !updates.getFirstName().isBlank()) {
+            customer.setFirstName(updates.getFirstName().trim());
+        }
+        if (updates.getLastName() != null && !updates.getLastName().isBlank()) {
+            customer.setLastName(updates.getLastName().trim());
+        }
+        // Telefon użytkownik może wyczyścić — pole jest opcjonalne.
+        if (updates.getPhone() != null) {
+            String trimmed = updates.getPhone().trim();
+            customer.setPhone(trimmed.isBlank() ? null : trimmed);
+        }
 
         // Email tylko jeśli się zmienił — i tylko jeśli nie zajęty przez kogoś innego.
-        if (notBlank(updates.getEmail())) {
+        if (updates.getEmail() != null && !updates.getEmail().isBlank()) {
             String newEmail = updates.getEmail().trim().toLowerCase(Locale.ROOT);
             if (!newEmail.equals(customer.getEmail())) {
                 if (customerRepository.existsByEmail(newEmail)) {
@@ -67,7 +77,4 @@ public class CustomerService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono klienta."));
     }
 
-    private boolean notBlank(String value) {
-        return value != null && !value.isBlank();
-    }
 }

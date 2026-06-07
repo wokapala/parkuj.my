@@ -68,6 +68,9 @@ public class VehicleService {
         vehicle.setPlateNumber(plateNumber);
         vehicle.setCountryCode(countryCode);
         vehicle.setPrimaryVehicle(shouldBePrimary);
+        if (request.getName() != null && !request.getName().isBlank()) {
+            vehicle.setName(request.getName().trim());
+        }
         return toDto(vehicleRepository.save(vehicle));
     }
 
@@ -87,6 +90,12 @@ public class VehicleService {
 
         if (hasActiveReservation(vehicleId)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Nie można usunąć pojazdu z aktywną rezerwacją.");
+        }
+        // FK reservation.vehicle_id jest NOT NULL — bez sprawdzenia historycznych rezerwacji
+        // ConstraintViolation rozwaliłby endpoint 500-tką.
+        if (reservationRepository.existsByVehicleVehicleId(vehicleId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Pojazd ma rezerwacje w historii — nie można go usunąć. Możesz zarejestrować nowy pojazd.");
         }
 
         boolean wasPrimary = vehicle.isPrimaryVehicle();
@@ -142,7 +151,9 @@ public class VehicleService {
         VehicleDTO dto = new VehicleDTO();
         dto.setId(vehicle.getVehicleId());
         dto.setCustomerId(vehicle.getCustomer().getCustomerId());
-        dto.setName(vehicle.getPlateNumber());
+        dto.setName(vehicle.getName() != null && !vehicle.getName().isBlank()
+            ? vehicle.getName()
+            : vehicle.getPlateNumber());
         dto.setPlateNumber(vehicle.getPlateNumber());
         dto.setCountryCode(vehicle.getCountryCode());
         dto.setPrimaryVehicle(vehicle.isPrimaryVehicle());

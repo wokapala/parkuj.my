@@ -15,6 +15,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
 
     boolean existsByVehicleVehicleIdAndStatusIn(Integer vehicleId, Collection<ReservationStatus> statuses);
 
+    boolean existsByVehicleVehicleId(Integer vehicleId);
+
+    List<Reservation> findByStatusAndExpiresAtBefore(ReservationStatus status, LocalDateTime now);
+
     List<Reservation> findByCustomerCustomerIdOrderByReservedAtDesc(Integer customerId);
 
     @Query("""

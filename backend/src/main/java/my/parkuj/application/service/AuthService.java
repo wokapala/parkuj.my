@@ -44,18 +44,21 @@ public class AuthService {
         customer.setStatus("ACTIVE");
         Customer saved = customerRepository.save(customer);
 
-        // Jeśli podano tablicę — utwórz pojazd główny (jeśli nie zajęty przez kogoś innego).
+        // Jeśli podano tablicę — utwórz pojazd główny.
+        // Zajęta tablica = rollback rejestracji z konkretnym komunikatem (zamiast cichego pominięcia).
         if (request.getPlate() != null && !request.getPlate().isBlank()) {
             String plate = request.getPlate().trim().replaceAll("\\s+", "").toUpperCase(Locale.ROOT);
             String countryCode = normalizeCountryCode(request.getCountryCode());
-            if (!vehicleRepository.existsByPlateNumberAndCountryCode(plate, countryCode)) {
-                Vehicle vehicle = new Vehicle();
-                vehicle.setCustomer(saved);
-                vehicle.setPlateNumber(plate);
-                vehicle.setCountryCode(countryCode);
-                vehicle.setPrimaryVehicle(true);
-                vehicleRepository.save(vehicle);
+            if (vehicleRepository.existsByPlateNumberAndCountryCode(plate, countryCode)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Pojazd z tą tablicą jest już zarejestrowany w systemie. Załóż konto bez tablicy i skontaktuj się z obsługą.");
             }
+            Vehicle vehicle = new Vehicle();
+            vehicle.setCustomer(saved);
+            vehicle.setPlateNumber(plate);
+            vehicle.setCountryCode(countryCode);
+            vehicle.setPrimaryVehicle(true);
+            vehicleRepository.save(vehicle);
         }
 
         return CustomerDTO.fromEntity(saved);

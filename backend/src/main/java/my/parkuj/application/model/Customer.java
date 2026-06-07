@@ -25,7 +25,10 @@ public class Customer {
     @Column(unique = true)
     private String googleSub;
 
+    @Column(nullable = false)
     private String firstName;
+
+    @Column(nullable = false)
     private String lastName;
 
     @Column(nullable = false, unique = true)

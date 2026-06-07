@@ -38,6 +38,11 @@ public class Vehicle {
     @Column(name = "country_code", nullable = false, length = 3)
     private String countryCode = "POL";
 
+    // Przyjazna nazwa nadana przez właściciela ("Toyota Corolla").
+    // Nullable — opcjonalna; fallback w UI na samą tablicę.
+    @Column(name = "name")
+    private String name;
+
     @Column(nullable = false)
     private boolean primaryVehicle;
 
@@ -73,6 +78,9 @@ public class Vehicle {
 
     public String getCountryCode() { return countryCode; }
     public void setCountryCode(String countryCode) { this.countryCode = countryCode; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
     public boolean isPrimaryVehicle() { return primaryVehicle; }
     public void setPrimaryVehicle(boolean primaryVehicle) { this.primaryVehicle = primaryVehicle; }
