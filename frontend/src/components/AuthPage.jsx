@@ -16,6 +16,7 @@ const initialRegister = {
   password: "",
   confirmPassword: "",
   terms: false,
+  hostParking: false,
 };
 
 export default function AuthPage({ setUser, setRole, setPage, setToast }) {
@@ -32,7 +33,7 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
 
   const updateRegister = (key) => (e) => {
     setError("");
-    const value = key === "terms" ? e.target.checked : e.target.value;
+    const value = key === "terms" || key === "hostParking" ? e.target.checked : e.target.value;
     setRegister({ ...register, [key]: value });
   };
 
@@ -113,8 +114,14 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
       localStorage.setItem("user", JSON.stringify(userData));
       setRole("customer");
       setUser(userData);
-      setPage("home");
-      setToast("Konto utworzone i zapisane. Możesz rezerwować miejsce.");
+      if (register.hostParking) {
+        // Użytkownik zaznaczył "chcę zarejestrować parking" — od razu wizard /join.
+        setPage("join");
+        setToast("Konto utworzone. Zarejestruj teraz swój parking.");
+      } else {
+        setPage("home");
+        setToast("Konto utworzone i zapisane. Możesz rezerwować miejsce.");
+      }
     } catch (err) {
       setError(err.message || "Rejestracja nie powiodła się. Spróbuj ponownie.");
     } finally {
@@ -213,6 +220,10 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
             <label className="auth-check">
               <input type="checkbox" checked={register.terms} onChange={updateRegister("terms")} />
               <span>Akceptuję regulamin i zgodę na obsługę rezerwacji parkingowych.</span>
+            </label>
+            <label className="auth-check">
+              <input type="checkbox" checked={register.hostParking} onChange={updateRegister("hostParking")} />
+              <span>Mam parking i chcę go zarejestrować w sieci parkuj.my (przejdziesz do kreatora po założeniu konta).</span>
             </label>
             <button className="btn btn-a btn-block" type="submit" disabled={submitting}>
               {submitting ? "Tworzenie konta…" : <>Zarejestruj konto <I.Check /></>}

@@ -96,6 +96,11 @@ export default function Nav({ page, setPage, pagePaths, user, setUser, setRole, 
                     <button className="umi" onClick={() => { setShowMenu(false); setPage("addCar"); }}>
                       <I.Car /> Dodaj pojazd
                     </button>
+                    {role !== "owner" && (
+                      <button className="umi" onClick={() => { setShowMenu(false); setPage("join"); }}>
+                        <I.Dash /> Dołącz z parkingiem
+                      </button>
+                    )}
                     <button
                       className="umi red"
                       onClick={() => { localStorage.removeItem("user"); localStorage.removeItem("role"); setUser(null); setRole("customer"); setShowMenu(false); setPage("landing"); }}
