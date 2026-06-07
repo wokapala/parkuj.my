@@ -215,3 +215,19 @@ export function checkAvailability(lotId, from, to) {
 export function fetchParkingLotPrice(lotId, from, to) {
   return apiCall(`/api/parking-lots/${lotId}/price?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
 }
+
+export function updateParkingLotPrice(lotId, newPrice) {
+  return apiCall(`/api/parking-lots/${lotId}/price?newPrice=${encodeURIComponent(newPrice)}`, { method: "PATCH" });
+}
+
+export function fetchAdminStats() {
+  return apiCall("/api/stats/admin");
+}
+
+export function fetchCustomerStats(customerId) {
+  return apiCall(`/api/stats/customer?customerId=${customerId}`);
+}
+
+export function forgotPassword(email) {
+  return apiCall(`/api/auth/forgot-password?email=${encodeURIComponent(email)}`, { method: "POST" });
+}

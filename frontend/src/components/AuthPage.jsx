@@ -1,6 +1,6 @@
 import { useState } from "react";
 import * as I from "../icons";
-import { registerCustomer, loginCustomer } from "../data/api";
+import { registerCustomer, loginCustomer, forgotPassword } from "../data/api";
 
 const initialLogin = {
   email: "jan@gmail.com",
@@ -25,6 +25,8 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
   const [register, setRegister] = useState(initialRegister);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
 
   const updateLogin = (key) => (e) => {
     setError("");
@@ -60,6 +62,21 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
       setToast("Zalogowano pomyślnie.");
     } catch (err) {
       setError(err.message || "Logowanie nie powiodło się.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) { setError("Podaj adres e-mail."); return; }
+    setSubmitting(true);
+    setError("");
+    try {
+      await forgotPassword(forgotEmail);
+      setForgotSent(true);
+    } catch {
+      setForgotSent(true); // zawsze pokaż sukces (nie ujawniamy czy email istnieje)
     } finally {
       setSubmitting(false);
     }
@@ -144,10 +161,10 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
 
       <div className="auth-card">
         <div className="auth-tabs">
-          <button className={mode === "login" ? "on" : ""} onClick={() => { setMode("login"); setError(""); }}>
+          <button className={mode === "login" ? "on" : ""} onClick={() => { setMode("login"); setError(""); setForgotSent(false); }}>
             Logowanie
           </button>
-          <button className={mode === "register" ? "on" : ""} onClick={() => { setMode("register"); setError(""); }}>
+          <button className={mode === "register" ? "on" : ""} onClick={() => { setMode("register"); setError(""); setForgotSent(false); }}>
             Rejestracja
           </button>
         </div>
@@ -174,6 +191,33 @@ export default function AuthPage({ setUser, setRole, setPage, setToast }) {
             <button className="btn btn-o btn-block" type="button" style={{ marginTop: 10 }} onClick={() => setMode("register")}>
               Utwórz nowe konto
             </button>
+
+            <div className="auth-divider" style={{ margin: "16px 0 8px" }}><span>resetowanie hasła</span></div>
+            {forgotSent ? (
+              <div style={{ fontSize: 13, color: "var(--success)", textAlign: "center", padding: "8px 0" }}>
+                Jeśli konto istnieje, link resetujący zostanie wysłany na podany adres.
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  className="fi"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="Twój e-mail"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  className="btn btn-o btn-sm"
+                  type="button"
+                  disabled={submitting}
+                  onClick={handleForgotPassword}
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  Wyślij link
+                </button>
+              </div>
+            )}
           </form>
         ) : (
           <form onSubmit={handleRegister}>

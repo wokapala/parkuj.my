@@ -1,10 +1,20 @@
+import { useEffect, useState } from "react";
 import * as I from "../icons";
-import { fetchVehicles, deleteVehicle, setPrimaryVehicle } from "../data/api";
+import { fetchVehicles, deleteVehicle, setPrimaryVehicle, fetchCustomerStats } from "../data/api";
 
 const sortVehicles = (vehicles) =>
   [...vehicles].sort((a, b) => Number(b.primary) - Number(a.primary));
 
 export default function UserPage({ user, vehicles, setVehicles, setPage, setToast }) {
+  const [customerStats, setCustomerStats] = useState(null);
+
+  useEffect(() => {
+    if (!user?.customerId) return;
+    fetchCustomerStats(user.customerId)
+      .then(setCustomerStats)
+      .catch(() => setCustomerStats(null));
+  }, [user?.customerId]);
+
   const refresh = async () => {
     if (!user?.customerId) return;
     try { setVehicles(await fetchVehicles(user.customerId)); } catch { /* zostaw stan */ }
@@ -47,6 +57,12 @@ export default function UserPage({ user, vehicles, setVehicles, setPage, setToas
         <div>
           <h2>{user?.name || "Użytkownik"}</h2>
           <p>{user?.email || "Brak adresu e-mail"}</p>
+          {customerStats && (
+            <p style={{ fontSize: 12, color: "var(--text3)", marginTop: 4 }}>
+              {customerStats.totalReservations} rezerwacji
+              {customerStats.totalSpent > 0 && ` · ${Number(customerStats.totalSpent).toLocaleString("pl")} zł wydane`}
+            </p>
+          )}
         </div>
         <button className="btn btn-o btn-sm" onClick={() => setPage("settings")}>
           <I.Gear /> Ustawienia

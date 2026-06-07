@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -32,5 +33,13 @@ public class AuthController {
     @PostMapping("/login")
     public CustomerDTO login(@RequestBody LoginRequestDTO request) {
         return authService.login(request);
+    }
+
+    // Reset hasła — mock: loguje request do konsoli, nie wysyła emaila.
+    // Zawsze zwraca 200 żeby nie ujawniać czy email istnieje w systemie.
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@RequestParam String email) {
+        System.out.println("[AUTH] Password reset requested for: " + email);
+        return ResponseEntity.ok().build();
     }
 }

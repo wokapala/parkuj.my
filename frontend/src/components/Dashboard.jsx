@@ -4,10 +4,8 @@ import {
   Tooltip, ResponsiveContainer,
 } from "recharts";
 import * as I from "../icons";
-import { fetchMyParkingLots, fetchParkingLotStats, updateParkingLotConfig } from "../data/api";
+import { fetchMyParkingLots, fetchParkingLotStats, updateParkingLotConfig, updateParkingLotPrice } from "../data/api";
 
-// Mock danych dot. wjazdów/wyjazdów — zostaje jako wizualizacja (US-K07/K09
-// wymaga OCR i tabeli parking_session, out of scope na zaliczenie).
 const ENTRIES = [
   { plate: "WA 12345", time: "14:32", type: "in",  status: "Rezerwacja OK" },
   { plate: "WE 99887", time: "14:18", type: "in",  status: "Rezerwacja OK" },
@@ -16,15 +14,10 @@ const ENTRIES = [
   { plate: "WA 33210", time: "13:15", type: "out", status: "Wyjazd — 2h 05min" },
 ];
 
-const QUICK_ACTIONS = [
-  { label: "Zmień cenę",         icon: <I.TrendUp /> },
-  { label: "Godziny otwarcia",   icon: <I.Clock /> },
-  { label: "Raport PDF",         icon: <I.Download /> },
-];
-
 const DAY_LABELS = ["Nd", "Pon", "Wt", "Śr", "Czw", "Pt", "Sob"];
 
 export default function Dashboard({ user, setPage, setToast }) {
+  const [lots, setLots]                   = useState([]);
   const [lotId, setLotId]                 = useState(null);
   const [stats, setStats]                 = useState(null);
   const [loading, setLoading]             = useState(true);
@@ -33,16 +26,21 @@ export default function Dashboard({ user, setPage, setToast }) {
   const [barrierOpen, setBarrierOpen]     = useState(false);
   const [split, setSplit]                 = useState({ total: 0, reservable: 0 });
 
-  // Ładujemy TYLKO parking należący do zalogowanego właściciela (po wizardzie /join).
-  // Brak parkingu = ekran z CTA do dodania.
+  // "Zmień cenę" modal
+  const [priceModal, setPriceModal]       = useState(false);
+  const [newPrice, setNewPrice]           = useState("");
+  const [savingPrice, setSavingPrice]     = useState(false);
+  const [priceError, setPriceError]       = useState("");
+
   useEffect(() => {
     let active = true;
     if (!user?.customerId) { setLoading(false); return; }
     (async () => {
       try {
-        const lots = await fetchMyParkingLots(user.customerId);
-        if (!active || !lots?.length) { setLoading(false); return; }
-        const firstId = lots[0].id ?? lots[0].parkingLotId;
+        const data = await fetchMyParkingLots(user.customerId);
+        if (!active || !data?.length) { setLoading(false); return; }
+        setLots(data);
+        const firstId = data[0].id ?? data[0].parkingLotId;
         setLotId(firstId);
         const s = await fetchParkingLotStats(firstId);
         if (!active) return;
@@ -56,6 +54,16 @@ export default function Dashboard({ user, setPage, setToast }) {
     })();
     return () => { active = false; };
   }, [user?.customerId]);
+
+  const switchLot = async (id) => {
+    setLotId(id);
+    setStats(null);
+    try {
+      const s = await fetchParkingLotStats(id);
+      setStats(s);
+      setSplit({ total: s.placesCount || 0, reservable: s.reservablePlacesCount || 0 });
+    } catch { /* zostaw null */ }
+  };
 
   const refreshStats = async () => {
     if (!lotId) return;
@@ -85,6 +93,32 @@ export default function Dashboard({ user, setPage, setToast }) {
       setSplitError(err.message || "Nie udało się zapisać podziału.");
     } finally {
       setSavingSplit(false);
+    }
+  };
+
+  const handleOpenPriceModal = () => {
+    setNewPrice(stats?.pricePerHour != null ? String(stats.pricePerHour) : "");
+    setPriceError("");
+    setPriceModal(true);
+  };
+
+  const handleSavePrice = async () => {
+    const val = parseFloat(newPrice);
+    if (isNaN(val) || val < 0) {
+      setPriceError("Podaj prawidłową cenę (≥ 0).");
+      return;
+    }
+    setSavingPrice(true);
+    setPriceError("");
+    try {
+      await updateParkingLotPrice(lotId, val.toFixed(2));
+      await refreshStats();
+      setPriceModal(false);
+      setToast(`Cena zaktualizowana: ${val.toFixed(2)} zł/h`);
+    } catch (err) {
+      setPriceError(err.message || "Nie udało się zmienić ceny.");
+    } finally {
+      setSavingPrice(false);
     }
   };
 
@@ -143,7 +177,22 @@ export default function Dashboard({ user, setPage, setToast }) {
       <div className="sh">
         <div>
           <h2 className="st">Panel zarządzania</h2>
-          <p className="ss">{stats.parkingLotName} · z bazy danych</p>
+          {lots.length > 1 ? (
+            <select
+              className="fs"
+              style={{ marginTop: 4, fontSize: 13 }}
+              value={lotId || ""}
+              onChange={(e) => switchLot(Number(e.target.value))}
+            >
+              {lots.map((l) => (
+                <option key={l.id ?? l.parkingLotId} value={l.id ?? l.parkingLotId}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p className="ss">{stats.parkingLotName} · z bazy danych</p>
+          )}
         </div>
         <button className="btn btn-o btn-sm" onClick={refreshStats}>
           Odśwież
@@ -162,9 +211,9 @@ export default function Dashboard({ user, setPage, setToast }) {
           <div className="d-stat-c">{stats.reservationsThisMonth} rezerwacji</div>
         </div>
         <div className="d-stat">
-          <div className="d-stat-l">Aktywne rezerwacje</div>
-          <div className="d-stat-v">{stats.activeReservationsCount}</div>
-          <div className="d-stat-c">PENDING + CONFIRMED + ACTIVE</div>
+          <div className="d-stat-l">Cena godzinowa</div>
+          <div className="d-stat-v">{stats.pricePerHour != null ? `${Number(stats.pricePerHour).toFixed(2)} zł` : "—"}</div>
+          <div className="d-stat-c">aktywny cennik</div>
         </div>
       </div>
 
@@ -311,17 +360,53 @@ export default function Dashboard({ user, setPage, setToast }) {
 
           <div className="d-sec">
             <h3>Szybkie akcje</h3>
-            {QUICK_ACTIONS.map((a, i) => (
-              <button
-                key={i}
-                className="qa-item"
-                onClick={() => setToast(`${a.label}…`)}
-              >
-                <div className="qa-item-ic">{a.icon}</div>
-                <span style={{ flex: 1 }}>{a.label}</span>
-                <I.Chev />
-              </button>
-            ))}
+
+            <button className="qa-item" onClick={handleOpenPriceModal}>
+              <div className="qa-item-ic"><I.TrendUp /></div>
+              <span style={{ flex: 1 }}>Zmień cenę</span>
+              <I.Chev />
+            </button>
+
+            {priceModal && (
+              <div className="qa-inline">
+                <div className="fg" style={{ marginTop: 8 }}>
+                  <label className="fl">Nowa cena / godz. (PLN)</label>
+                  <input
+                    className="fi"
+                    type="number"
+                    min="0"
+                    step="0.50"
+                    value={newPrice}
+                    onChange={(e) => { setNewPrice(e.target.value); setPriceError(""); }}
+                    autoFocus
+                  />
+                </div>
+                {priceError && (
+                  <div className="auth-error" style={{ margin: "8px 0" }}>
+                    <I.Alert /> {priceError}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button className="btn btn-a btn-sm" onClick={handleSavePrice} disabled={savingPrice}>
+                    {savingPrice ? "Zapisywanie…" : "Zapisz"}
+                  </button>
+                  <button className="btn btn-o btn-sm" onClick={() => setPriceModal(false)}>
+                    Anuluj
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <button className="qa-item" onClick={() => setToast("Godziny otwarcia — brak w obecnej wersji DB")}>
+              <div className="qa-item-ic"><I.Clock /></div>
+              <span style={{ flex: 1 }}>Godziny otwarcia</span>
+              <I.Chev />
+            </button>
+            <button className="qa-item" onClick={() => setToast("Eksport PDF — wkrótce")}>
+              <div className="qa-item-ic"><I.Download /></div>
+              <span style={{ flex: 1 }}>Raport PDF</span>
+              <I.Chev />
+            </button>
           </div>
         </div>
       </div>

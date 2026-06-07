@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import * as I from "../icons";
 import { MOCK_PARKINGS } from "../data/mockData";
-import { calcHours, getParkingStats } from "../data/parkingAvailability";
+import { fetchParkingLots, checkAvailability, fetchParkingLotPrice } from "../data/api";
 
 const makeIcon = () =>
   L.divIcon({
@@ -21,14 +21,59 @@ const makeIcon = () =>
     popupAnchor: [0, -22],
   });
 
+const todayIso = () => new Date().toISOString().slice(0, 10);
+
 export default function ParkingDetailsPage({ parkingId, setPage }) {
-  const parking = MOCK_PARKINGS.find((item) => item.id === parkingId) || MOCK_PARKINGS[0];
-  const [date, setDate] = useState("2026-04-20");
-  const [timeFrom, setTimeFrom] = useState("09:00");
-  const [timeTo, setTimeTo] = useState("17:00");
-  const hours = calcHours(timeFrom, timeTo);
-  const stats = getParkingStats(parking, date, timeFrom, timeTo);
-  const total = Math.round(hours * parking.price);
+  const [parking, setParking]         = useState(null);
+  const [date, setDate]               = useState(todayIso);
+  const [timeFrom, setTimeFrom]       = useState("09:00");
+  const [timeTo, setTimeTo]           = useState("17:00");
+  const [avail, setAvail]             = useState(null);
+  const [priceEst, setPriceEst]       = useState(null);
+  const [checkingAvail, setCheckingAvail] = useState(false);
+
+  // Załaduj dane parkingu z backendu (fallback: mock)
+  useEffect(() => {
+    fetchParkingLots()
+      .then((lots) => {
+        const found = lots.find((l) => l.id === parkingId || l.parkingLotId === parkingId);
+        setParking(found || MOCK_PARKINGS.find((m) => m.id === parkingId) || MOCK_PARKINGS[0]);
+      })
+      .catch(() => {
+        setParking(MOCK_PARKINGS.find((m) => m.id === parkingId) || MOCK_PARKINGS[0]);
+      });
+  }, [parkingId]);
+
+  // Sprawdź dostępność i cenę przy zmianie daty/godzin
+  useEffect(() => {
+    if (!parking?.id || !date || !timeFrom || !timeTo) return;
+    const from = `${date}T${timeFrom}:00`;
+    const to   = `${date}T${timeTo}:00`;
+    if (from >= to) { setAvail(null); setPriceEst(null); return; }
+
+    setCheckingAvail(true);
+    Promise.all([
+      checkAvailability(parking.id, from, to).catch(() => null),
+      fetchParkingLotPrice(parking.id, from, to).catch(() => null),
+    ]).then(([a, p]) => {
+      setAvail(a);
+      setPriceEst(p);
+    }).finally(() => setCheckingAvail(false));
+  }, [parking?.id, date, timeFrom, timeTo]);
+
+  if (!parking) return (
+    <div className="fin">
+      <div className="sh"><div><h2 className="st">Szczegóły parkingu</h2><p className="ss">Wczytywanie…</p></div></div>
+    </div>
+  );
+
+  const coords = parking.coords || [52.2297, 21.0122];
+  const availSpots = avail?.availableSpots ?? parking.available ?? 0;
+  const totalSpots = parking.spots ?? 0;
+  const occupancyPct = totalSpots > 0 ? Math.round(((totalSpots - availSpots) / totalSpots) * 100) : 0;
+  const estimatedPrice = priceEst?.estimatedPrice != null
+    ? Number(priceEst.estimatedPrice).toFixed(2)
+    : null;
 
   return (
     <div className="fin parking-details">
@@ -43,24 +88,24 @@ export default function ParkingDetailsPage({ parkingId, setPage }) {
 
       <section className="parking-hero">
         <div className="parking-hero-copy">
-          <div className="pc-icon">{parking.img}</div>
+          <div className="pc-icon">{parking.img || "🅿️"}</div>
           <h1>{parking.name}</h1>
           <p>{parking.address}</p>
           <div className="parking-hero-meta">
-            <span><I.Star /> {parking.rating}</span>
-            <span>{parking.price} zł/h</span>
-            <span>{parking.spots} miejsc</span>
+            {parking.rating && <span><I.Star /> {parking.rating}</span>}
+            <span>{parking.price ?? Number(parking.pricePerHour ?? 0)} zł/h</span>
+            <span>{totalSpots} miejsc</span>
           </div>
         </div>
         <div className="parking-mini-map">
-          <MapContainer center={parking.coords} zoom={14} style={{ height: "100%", width: "100%" }} zoomControl={false}>
+          <MapContainer center={coords} zoom={14} style={{ height: "100%", width: "100%" }} zoomControl={false}>
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
               subdomains="abcd"
               maxZoom={20}
             />
-            <Marker position={parking.coords} icon={makeIcon()}>
+            <Marker position={coords} icon={makeIcon()}>
               <Popup>{parking.name}</Popup>
             </Marker>
           </MapContainer>
@@ -81,26 +126,36 @@ export default function ParkingDetailsPage({ parkingId, setPage }) {
           <input className="fi" type="time" value={timeTo} onChange={(e) => setTimeTo(e.target.value)} />
         </div>
         <div className="filter-summary">
-          <span>{hours > 0 ? `${hours} h · ${total} zł` : "Nieprawidłowe godziny"}</span>
-          <strong>{stats.available} wolnych miejsc</strong>
+          {checkingAvail ? (
+            <span>Sprawdzam…</span>
+          ) : avail ? (
+            <>
+              <span>{estimatedPrice ? `${estimatedPrice} zł` : "—"}</span>
+              <strong style={{ color: avail.available ? "var(--success)" : "var(--danger)" }}>
+                {avail.available ? `${availSpots} wolnych` : "Brak miejsc"}
+              </strong>
+            </>
+          ) : (
+            <span style={{ color: "var(--text3)" }}>Wybierz termin</span>
+          )}
         </div>
       </section>
 
       <section className="details-stats">
         <div className="d-stat">
           <div className="d-stat-l">Dostępne miejsca</div>
-          <div className="d-stat-v">{stats.available}</div>
-          <div className="d-stat-c">z {parking.spots} wszystkich</div>
+          <div className="d-stat-v">{avail?.availableSpots ?? availSpots}</div>
+          <div className="d-stat-c">z {totalSpots} rezerwowanych</div>
         </div>
         <div className="d-stat">
           <div className="d-stat-l">Obłożenie</div>
-          <div className="d-stat-v">{stats.occupancy}%</div>
+          <div className="d-stat-v">{occupancyPct}%</div>
           <div className="d-stat-c up">dla wybranego terminu</div>
         </div>
         <div className="d-stat">
-          <div className="d-stat-l">Rezerwacje dziś</div>
-          <div className="d-stat-v">{stats.reservationsToday}</div>
-          <div className="d-stat-c">szczyt {stats.peak}</div>
+          <div className="d-stat-l">Cena szacowana</div>
+          <div className="d-stat-v">{estimatedPrice ? `${estimatedPrice} zł` : "—"}</div>
+          <div className="d-stat-c">za wybrany czas</div>
         </div>
       </section>
 
@@ -110,12 +165,22 @@ export default function ParkingDetailsPage({ parkingId, setPage }) {
           <p className="desc">Miejsca online są dostępne do rezerwacji w aplikacji, a walk-in zostają dla kierowców z drogi.</p>
           <div className="parking-bars">
             <div>
-              <div className="bar-label"><span>Rezerwacje online</span><strong>{stats.reservable}</strong></div>
-              <div className="bar-track"><span style={{ width: `${(stats.reservable / parking.spots) * 100}%` }} /></div>
+              <div className="bar-label">
+                <span>Rezerwacje online</span>
+                <strong>{avail?.totalReservableSpots ?? parking.available ?? 0}</strong>
+              </div>
+              <div className="bar-track">
+                <span style={{ width: `${totalSpots > 0 ? ((avail?.totalReservableSpots ?? parking.available ?? 0) / totalSpots) * 100 : 0}%` }} />
+              </div>
             </div>
             <div>
-              <div className="bar-label"><span>Walk-in</span><strong>{stats.walkIn}</strong></div>
-              <div className="bar-track muted"><span style={{ width: `${(stats.walkIn / parking.spots) * 100}%` }} /></div>
+              <div className="bar-label">
+                <span>Walk-in</span>
+                <strong>{Math.max(0, totalSpots - (avail?.totalReservableSpots ?? parking.available ?? 0))}</strong>
+              </div>
+              <div className="bar-track muted">
+                <span style={{ width: `${totalSpots > 0 ? (Math.max(0, totalSpots - (avail?.totalReservableSpots ?? parking.available ?? 0)) / totalSpots) * 100 : 0}%` }} />
+              </div>
             </div>
           </div>
         </div>
@@ -123,8 +188,8 @@ export default function ParkingDetailsPage({ parkingId, setPage }) {
         <div className="wt-card">
           <h2>Informacje</h2>
           <div className="parking-info-list">
-            <div><span>Cena godzinowa</span><strong>{parking.price} zł</strong></div>
-            <div><span>Szacowany koszt</span><strong>{total > 0 ? `${total} zł` : "—"}</strong></div>
+            <div><span>Cena godzinowa</span><strong>{parking.price ?? Number(parking.pricePerHour ?? 0)} zł</strong></div>
+            <div><span>Szacowany koszt</span><strong>{estimatedPrice ? `${estimatedPrice} zł` : "—"}</strong></div>
             <div><span>Adres</span><strong>{parking.address}</strong></div>
             <div><span>Rozpoznawanie tablic</span><strong>Aktywne</strong></div>
           </div>

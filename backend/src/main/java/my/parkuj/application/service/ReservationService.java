@@ -189,7 +189,17 @@ public class ReservationService {
         }
 
         reservation.setStatus(ReservationStatus.CANCELLED);
-        return toResponse(reservationRepository.save(reservation));
+        Reservation cancelled = reservationRepository.save(reservation);
+
+        // Zwrot płatności jeśli opłacona (status COMPLETED → REFUNDED).
+        paymentRepository.findByReservationReservationId(reservationId).forEach(p -> {
+            if (p.getStatus() == PaymentStatus.COMPLETED) {
+                p.setStatus(PaymentStatus.REFUNDED);
+                paymentRepository.save(p);
+            }
+        });
+
+        return toResponse(cancelled);
     }
 
     private void validateRequest(ReservationRequestDTO request) {

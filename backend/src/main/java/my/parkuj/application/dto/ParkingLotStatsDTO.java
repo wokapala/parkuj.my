@@ -11,6 +11,7 @@ public class ParkingLotStatsDTO {
     private Integer placesCount;
     private Integer reservablePlacesCount;
     private Integer walkInPlacesCount;
+    private BigDecimal pricePerHour;
     private long activeReservationsCount;
     private long reservationsThisMonth;
     private BigDecimal revenueThisMonth;
@@ -51,6 +52,9 @@ public class ParkingLotStatsDTO {
 
     public Integer getWalkInPlacesCount() { return walkInPlacesCount; }
     public void setWalkInPlacesCount(Integer walkInPlacesCount) { this.walkInPlacesCount = walkInPlacesCount; }
+
+    public BigDecimal getPricePerHour() { return pricePerHour; }
+    public void setPricePerHour(BigDecimal pricePerHour) { this.pricePerHour = pricePerHour; }
 
     public long getActiveReservationsCount() { return activeReservationsCount; }
     public void setActiveReservationsCount(long activeReservationsCount) { this.activeReservationsCount = activeReservationsCount; }

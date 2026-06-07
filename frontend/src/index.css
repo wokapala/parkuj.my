@@ -1327,6 +1327,14 @@ body {
 }
 .qa-item:hover .qa-item-ic { border-color: var(--border2); background: var(--bg2) }
 
+.qa-inline {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  background: var(--bg3);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
 /* ── Join page ── */
 .j-hero { text-align: center; padding: 48px 24px; max-width: 560px; margin: 0 auto }
 .j-hero h1 {
@@ -1556,4 +1564,17 @@ body {
   .reservation-filters,
   .details-filter { grid-template-columns: 1fr }
   .parking-hero-copy h1 { font-size: 30px }
+  /* Form rows stack vertically */
+  .fr { grid-template-columns: 1fr }
+  /* Dashboard stat grid single column */
+  .d-grid { grid-template-columns: 1fr }
+  /* Admin & reservations tables scroll */
+  .admin-table, .dtbl { font-size: 11px }
+  .card { overflow-x: auto }
+  /* Reserve wizard narrows */
+  .pay-methods { grid-template-columns: 1fr 1fr }
+  /* Nav pill wraps */
+  .pill span { display: none }
+  /* Home stats */
+  .home-stats { gap: 16px }
 }

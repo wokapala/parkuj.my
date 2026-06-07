@@ -1,6 +1,7 @@
 package my.parkuj.application.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -165,6 +166,28 @@ public class ParkingLotService {
         return pricingService.calculatePrice(parkingLotId, from, to);
     }
 
+    // Zmiana ceny godzinowej — append-only: zamknięcie bieżącego planu + nowy rekord.
+    @Transactional
+    public ParkingLotDTO updatePrice(Integer parkingLotId, BigDecimal newPrice) {
+        if (newPrice == null || newPrice.signum() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cena musi być liczbą nieujemną.");
+        }
+        ParkingLot lot = findParkingLot(parkingLotId);
+        pricingPlanRepository
+            .findFirstByParkingLotParkingLotIdAndValidToIsNullOrderByValidFromDesc(parkingLotId)
+            .ifPresent(plan -> {
+                plan.setValidTo(LocalDateTime.now());
+                pricingPlanRepository.save(plan);
+            });
+        PricingPlan newPlan = new PricingPlan();
+        newPlan.setParkingLot(lot);
+        newPlan.setPricePerHour(newPrice.setScale(2, RoundingMode.HALF_UP));
+        newPlan.setCurrency("PLN");
+        newPlan.setValidFrom(LocalDateTime.now());
+        pricingPlanRepository.save(newPlan);
+        return toDto(lot);
+    }
+
     // US-A05 — operator zmienia podział: ile ogółem, ile na rezerwacje online.
     @Transactional
     public ParkingLotDTO updateConfig(Integer parkingLotId, ParkingLotConfigDTO config) {
@@ -203,6 +226,11 @@ public class ParkingLotService {
         stats.setPlacesCount(lot.getPlacesCount());
         stats.setReservablePlacesCount(lot.getReservablePlacesCount());
         stats.setWalkInPlacesCount(Math.max(0, lot.getPlacesCount() - lot.getReservablePlacesCount()));
+
+        try {
+            PricingPlan activePlan = pricingService.getActivePlan(parkingLotId);
+            stats.setPricePerHour(activePlan.getPricePerHour());
+        } catch (ResponseStatusException ignored) { /* brak cennika */ }
 
         stats.setActiveReservationsCount(
             reservationRepository.countByParkingLotAndStatuses(parkingLotId, BLOCKING_STATUSES)

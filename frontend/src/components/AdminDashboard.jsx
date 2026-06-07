@@ -4,6 +4,7 @@ import {
   fetchAllCustomers,
   fetchAllReservations,
   fetchAllIncidents,
+  fetchAdminStats,
   createIncident,
   updateIncidentStatus,
 } from "../data/api";
@@ -46,6 +47,7 @@ export default function AdminDashboard({ admin, setAdmin, setPage, setToast }) {
   const [customers, setCustomers]     = useState([]);
   const [reservations, setReservations] = useState([]);
   const [incidents, setIncidents]     = useState([]);
+  const [adminStats, setAdminStats]   = useState(null);
   const [loading, setLoading]         = useState(true);
   const [newIncident, setNewIncident] = useState({
     incidentType: "BARRIER_FAILURE",
@@ -58,14 +60,16 @@ export default function AdminDashboard({ admin, setAdmin, setPage, setToast }) {
   const refresh = async () => {
     setLoading(true);
     try {
-      const [c, r, i] = await Promise.all([
+      const [c, r, i, s] = await Promise.all([
         fetchAllCustomers(),
         fetchAllReservations(),
         fetchAllIncidents(),
+        fetchAdminStats().catch(() => null),
       ]);
       setCustomers(c || []);
       setReservations(r || []);
       setIncidents(i || []);
+      setAdminStats(s);
     } catch {
       setCustomers([]);
       setReservations([]);
@@ -114,10 +118,6 @@ export default function AdminDashboard({ admin, setAdmin, setPage, setToast }) {
     setToast("Wylogowano z panelu admina.");
   };
 
-  const revenue = reservations
-    .filter((r) => ["CONFIRMED", "ACTIVE", "COMPLETED"].includes(r.backendStatus))
-    .reduce((sum, r) => sum + (Number(r.price) || 0), 0);
-
   return (
     <div className="fin">
       <div className="sh">
@@ -135,18 +135,30 @@ export default function AdminDashboard({ admin, setAdmin, setPage, setToast }) {
         </div>
       </div>
 
-      <div className="home-stats" style={{ marginBottom: 20 }}>
-        <div>
-          <span className="home-stat-n">{customers.length}</span>
-          <div className="home-stat-l">Klienci w bazie</div>
+      <div className="d-grid" style={{ marginBottom: 20 }}>
+        <div className="d-stat">
+          <div className="d-stat-l">Przychód łącznie</div>
+          <div className="d-stat-v">
+            {adminStats?.totalRevenue != null
+              ? `${Number(adminStats.totalRevenue).toLocaleString("pl")} zł`
+              : `${reservations.filter((r) => ["CONFIRMED","ACTIVE","COMPLETED"].includes(r.backendStatus)).reduce((s,r) => s + (Number(r.price)||0), 0).toFixed(0)} zł`}
+          </div>
+          <div className="d-stat-c">opłacone rezerwacje</div>
         </div>
-        <div>
-          <span className="home-stat-n">{reservations.length}</span>
-          <div className="home-stat-l">Wszystkich rezerwacji</div>
+        <div className="d-stat">
+          <div className="d-stat-l">Klienci w bazie</div>
+          <div className="d-stat-v">{adminStats?.totalCustomers ?? customers.length}</div>
+          <div className="d-stat-c">zarejestrowani użytkownicy</div>
         </div>
-        <div>
-          <span className="home-stat-n">{revenue.toFixed(0)} zł</span>
-          <div className="home-stat-l">Przychód z aktywnych</div>
+        <div className="d-stat">
+          <div className="d-stat-l">Aktywne rezerwacje</div>
+          <div className="d-stat-v">{adminStats?.activeReservations ?? "—"}</div>
+          <div className="d-stat-c">PENDING + CONFIRMED + ACTIVE</div>
+        </div>
+        <div className="d-stat">
+          <div className="d-stat-l">Otwarte incydenty</div>
+          <div className="d-stat-v">{adminStats?.openIncidents ?? incidents.filter((i) => i.status === "OPEN").length}</div>
+          <div className="d-stat-c">wymagają uwagi</div>
         </div>
       </div>
 

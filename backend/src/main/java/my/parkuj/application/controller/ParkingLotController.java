@@ -9,6 +9,7 @@ import my.parkuj.application.dto.ParkingLotDTO;
 import my.parkuj.application.dto.ParkingLotStatsDTO;
 import my.parkuj.application.dto.PriceEstimateDTO;
 import my.parkuj.application.service.ParkingLotService;
+import java.math.BigDecimal;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -76,6 +77,15 @@ public class ParkingLotController {
     @GetMapping("/{id}/stats")
     public ParkingLotStatsDTO getStats(@PathVariable Integer id) {
         return parkingLotService.getStats(id);
+    }
+
+    // Zmiana ceny godzinowej (append-only: tworzy nowy PricingPlan, zamyka poprzedni).
+    @PatchMapping("/{id}/price")
+    public ParkingLotDTO updatePrice(
+        @PathVariable Integer id,
+        @RequestParam BigDecimal newPrice
+    ) {
+        return parkingLotService.updatePrice(id, newPrice);
     }
 
     // US-A05 — zmiana podziału miejsc (ogółem vs rezerwowane online).

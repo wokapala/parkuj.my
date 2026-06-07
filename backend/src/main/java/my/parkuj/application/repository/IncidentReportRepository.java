@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
 public interface IncidentReportRepository extends JpaRepository<IncidentReport, Integer> {
 
     List<IncidentReport> findAllByOrderByCreatedAtDesc();
+
+    long countByStatusIgnoreCase(String status);
 }
