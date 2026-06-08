@@ -65,13 +65,31 @@ export default function App() {
   const [showMenu, setShowMenu]   = useState(false);
   const [toast, setToast]         = useState(null);
   const [vehicles, setVehicles]   = useState([]);
+  const [vehiclesOwnerId, setVehiclesOwnerId] = useState(null);
 
   useEffect(() => {
-    if (!user?.customerId) { setVehicles([]); return; }
+    if (!user?.customerId) {
+      setVehicles([]);
+      setVehiclesOwnerId(null);
+      return;
+    }
+    const customerId = user.customerId;
+    setVehicles([]);
+    setVehiclesOwnerId(null);
     let active = true;
-    fetchVehicles(user.customerId)
-      .then((list) => { if (active) setVehicles(list); })
-      .catch(() => { if (active) setVehicles([]); });
+    fetchVehicles(customerId)
+      .then((list) => {
+        if (active) {
+          setVehicles(list);
+          setVehiclesOwnerId(customerId);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setVehicles([]);
+          setVehiclesOwnerId(customerId);
+        }
+      });
     return () => { active = false; };
   }, [user?.customerId]);
 
@@ -138,7 +156,7 @@ export default function App() {
       case "landing":      return <Landing setPage={setPage} />;
       case "auth":         return <AuthPage setUser={setUser} setRole={setRole} setPage={setPage} setToast={setToast} />;
       case "home":         return <HomePage setPage={setPage} />;
-      case "reserve":      return <ReservePage user={user} vehicles={vehicles} setPage={setPage} setToast={setToast} />;
+      case "reserve":      return <ReservePage user={user} vehicles={vehicles} vehiclesOwnerId={vehiclesOwnerId} setPage={setPage} setToast={setToast} />;
       case "reservations": return <Reservations user={user} setPage={setPage} setToast={setToast} />;
       case "join":         return <JoinPage user={user} setUser={setUser} setPage={setPage} setRole={setRole} />;
       case "dashboard":    return <Dashboard user={user} setPage={setPage} setToast={setToast} />;

@@ -43,27 +43,64 @@ const fmtDate = (iso) => {
   return `${d}.${m}.${y}`;
 };
 
-const DRAFT_VERSION = 1;
-const getDraftKey = (customerId) => `parkuj.reserveDraft.${customerId || "guest"}`;
+const DRAFT_VERSION = 2;
+const getDraftKey = (customerId) => customerId ? `parkuj.reserveDraft.${customerId}` : null;
 
-const readDraft = (customerId) => {
-  if (typeof window === "undefined") return {};
+const createDefaultDraft = (vehicles = []) => ({
+  step: 1,
+  selectedId: null,
+  search: "",
+  vehicleMode: "saved",
+  selectedVehicleId: vehicles[0]?.id || null,
+  plate: "",
+  date: new Date().toISOString().slice(0, 10),
+  timeFrom: "09:00",
+  timeTo: "17:00",
+  payMethod: "blik",
+});
+
+const normalizeDraft = (draft, vehicles = []) => {
+  const defaults = createDefaultDraft(vehicles);
+  if (!draft || draft.version !== DRAFT_VERSION) return defaults;
+
+  return {
+    ...defaults,
+    step: draft.step === 2 && draft.selectedId ? 2 : 1,
+    selectedId: draft.selectedId || null,
+    search: typeof draft.search === "string" ? draft.search : defaults.search,
+    vehicleMode: draft.vehicleMode === "manual" ? "manual" : defaults.vehicleMode,
+    selectedVehicleId: draft.selectedVehicleId || defaults.selectedVehicleId,
+    plate: typeof draft.plate === "string" ? draft.plate : defaults.plate,
+    date: typeof draft.date === "string" && draft.date ? draft.date : defaults.date,
+    timeFrom: typeof draft.timeFrom === "string" && draft.timeFrom ? draft.timeFrom : defaults.timeFrom,
+    timeTo: typeof draft.timeTo === "string" && draft.timeTo ? draft.timeTo : defaults.timeTo,
+    payMethod: ["blik", "card", "gpay"].includes(draft.payMethod) ? draft.payMethod : defaults.payMethod,
+  };
+};
+
+const readDraft = (customerId, vehicles = []) => {
+  const key = getDraftKey(customerId);
+  if (!key || typeof window === "undefined") return createDefaultDraft(vehicles);
   try {
-    const raw = window.sessionStorage.getItem(getDraftKey(customerId));
+    const raw = window.sessionStorage.getItem(key);
     const parsed = raw ? JSON.parse(raw) : null;
-    if (!parsed || parsed.version !== DRAFT_VERSION) return {};
-    return parsed;
+    return normalizeDraft(parsed, vehicles);
   } catch {
-    return {};
+    return createDefaultDraft(vehicles);
   }
 };
 
 const writeDraft = (customerId, draft) => {
-  if (typeof window === "undefined") return;
+  const key = getDraftKey(customerId);
+  if (!key || typeof window === "undefined") return;
   try {
     window.sessionStorage.setItem(
-      getDraftKey(customerId),
-      JSON.stringify({ version: DRAFT_VERSION, ...draft })
+      key,
+      JSON.stringify({
+        version: DRAFT_VERSION,
+        ...draft,
+        step: draft.step === 3 ? 2 : draft.step,
+      })
     );
   } catch {
     // Session storage is a convenience only; the form still works without it.
@@ -71,9 +108,10 @@ const writeDraft = (customerId, draft) => {
 };
 
 const clearDraft = (customerId) => {
-  if (typeof window === "undefined") return;
+  const key = getDraftKey(customerId);
+  if (!key || typeof window === "undefined") return;
   try {
-    window.sessionStorage.removeItem(getDraftKey(customerId));
+    window.sessionStorage.removeItem(key);
   } catch {
     // no-op
   }
@@ -83,8 +121,14 @@ const roundMoney = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 const formatBillableHours = (hours) =>
   hours.toFixed(2).replace(/\.?0+$/, "");
 
-export default function ReservePage({ user, vehicles = [], setPage, setToast }) {
-  const draft = useMemo(() => readDraft(user?.customerId), [user?.customerId]);
+export default function ReservePage({ user, vehicles = [], vehiclesOwnerId = null, setPage, setToast }) {
+  const customerId = user?.customerId || null;
+  const accountVehicles = useMemo(
+    () => vehiclesOwnerId === customerId ? vehicles : [],
+    [vehiclesOwnerId, customerId, vehicles]
+  );
+  const [draftOwnerId, setDraftOwnerId] = useState(customerId);
+  const draft = useMemo(() => readDraft(customerId, accountVehicles), []);
   const [step, setStep]             = useState(() => draft.step || 1);
   const [selectedId, setSelectedId] = useState(() => draft.selectedId || null);
   const [search, setSearch]         = useState(() => draft.search || "");
@@ -104,7 +148,27 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
   const [availabilityMap, setAvailabilityMap] = useState({});
 
   useEffect(() => {
-    writeDraft(user?.customerId, {
+    if (draftOwnerId === customerId) return;
+    const nextDraft = readDraft(customerId, []);
+    setDraftOwnerId(customerId);
+    setStep(nextDraft.step);
+    setSelectedId(nextDraft.selectedId);
+    setSearch(nextDraft.search);
+    setVehicleMode(nextDraft.vehicleMode);
+    setSelectedVehicleId(nextDraft.selectedVehicleId);
+    setPlate(nextDraft.plate);
+    setDate(nextDraft.date);
+    setTimeFrom(nextDraft.timeFrom);
+    setTimeTo(nextDraft.timeTo);
+    setPayMethod(nextDraft.payMethod);
+    setBlik(["", "", "", "", "", ""]);
+    setSubmitError("");
+    setAvailabilityMap({});
+  }, [customerId, draftOwnerId]);
+
+  useEffect(() => {
+    if (!customerId || draftOwnerId !== customerId) return;
+    writeDraft(customerId, {
       step,
       selectedId,
       search,
@@ -116,14 +180,18 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
       timeTo,
       payMethod,
     });
-  }, [user?.customerId, step, selectedId, search, vehicleMode, selectedVehicleId, plate, date, timeFrom, timeTo, payMethod]);
+  }, [customerId, draftOwnerId, step, selectedId, search, vehicleMode, selectedVehicleId, plate, date, timeFrom, timeTo, payMethod]);
 
   useEffect(() => {
-    if (vehicleMode !== "saved" || !vehicles.length) return;
-    if (!vehicles.some((vehicle) => vehicle.id === selectedVehicleId)) {
-      setSelectedVehicleId(vehicles[0].id);
+    if (vehicleMode !== "saved") return;
+    if (!accountVehicles.length) {
+      if (selectedVehicleId) setSelectedVehicleId(null);
+      return;
     }
-  }, [vehicles, vehicleMode, selectedVehicleId]);
+    if (!accountVehicles.some((vehicle) => vehicle.id === selectedVehicleId)) {
+      setSelectedVehicleId(accountVehicles[0].id);
+    }
+  }, [accountVehicles, vehicleMode, selectedVehicleId]);
 
   useEffect(() => {
     let active = true;
@@ -177,7 +245,7 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
   }, [parkings, search, availabilityMap]);
 
   const parking = parkings.find((p) => p.id === selectedId);
-  const savedVehicles = vehicles.length ? vehicles : [];
+  const savedVehicles = accountVehicles.length ? accountVehicles : [];
   const selectedVehicle = savedVehicles.find((v) => v.id === selectedVehicleId) || savedVehicles[0];
   const activePlate = vehicleMode === "saved" ? selectedVehicle?.plate || "" : plate;
   const minutes = calcMinutes(timeFrom, timeTo);
@@ -202,7 +270,7 @@ export default function ReservePage({ user, vehicles = [], setPage, setToast }) 
   };
 
   const resetWizard = () => {
-    clearDraft(user?.customerId);
+    clearDraft(customerId);
     setStep(1);
     setSelectedId(null);
     setSearch("");

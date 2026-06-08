@@ -598,7 +598,12 @@ PATCH  /admin/api/parkings/{id}/config  # konfiguracja podziału miejsc
 - [x] Anulowanie rezerwacji w `Reservations.jsx` wymaga potwierdzenia w modalu, żeby uniknąć missclicków
 - [x] Frontend liczy cenę tym samym modelem co backend: minuty / 60, zaokrąglenie do 0.01h w górę, następnie kwota do 2 miejsc
 - [x] Minimalny czas rezerwacji to 30 minut; walidacja jest w UI, `ReservationService` i endpointzie wyceny `PricingService`
-- [x] Formularz rezerwacji zapisuje draft w `sessionStorage` na czas sesji użytkownika i czyści go po udanej rezerwacji
+- [x] Formularz rezerwacji zapisuje draft w `sessionStorage` per `customerId`, czyści go po udanej rezerwacji i nigdy nie przywraca bezpośrednio kroku płatności
+
+### Poprawki rejestracji (Codex, czerwiec 2026)
+- [x] Rejestracja wymaga imienia, nazwiska, poprawnego adresu e-mail i hasła
+- [x] Telefon i tablica są opcjonalne; jeśli tablica jest podana, po usunięciu spacji musi mieć 5-7 znaków
+- [x] Walidacja rejestracji jest spójna w `AuthPage.jsx` i `AuthService`
 
 ### Do zrobienia (backend — wypełnienie logiki)
 - [ ] Rozbudowa entity `Customer` o pełne pola wg schematu DB (googleSub, firstName, lastName, phone, status, itp.)
