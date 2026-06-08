@@ -34,6 +34,7 @@ public class ReservationService {
 
     private static final String CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final int CODE_LENGTH = 12;
+    private static final long MIN_RESERVATION_MINUTES = 30;
     private static final List<ReservationStatus> BLOCKING_STATUSES = List.of(
         ReservationStatus.PENDING,
         ReservationStatus.CONFIRMED,
@@ -274,6 +275,10 @@ public class ReservationService {
         }
         if (!request.getEndAt().isAfter(request.getStartAt())) {
             throw badRequest("Data zakończenia musi być późniejsza niż data rozpoczęcia.");
+        }
+        long durationMinutes = Duration.between(request.getStartAt(), request.getEndAt()).toMinutes();
+        if (durationMinutes < MIN_RESERVATION_MINUTES) {
+            throw badRequest("Minimalny czas rezerwacji to 30 minut.");
         }
         if (request.getStartAt().isBefore(LocalDateTime.now().minusMinutes(1))) {
             throw badRequest("Nie można utworzyć rezerwacji w przeszłości.");

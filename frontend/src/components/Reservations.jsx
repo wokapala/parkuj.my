@@ -20,6 +20,7 @@ export default function Reservations({ user, setPage, setToast }) {
   const [expanded, setExpanded] = useState(null);
   const [filter, setFilter]     = useState("all");
   const [cancellingId, setCancellingId] = useState(null);
+  const [reservationToCancel, setReservationToCancel] = useState(null);
 
   const refresh = async () => {
     if (!user?.customerId) { setList([]); setLoading(false); return; }
@@ -35,21 +36,32 @@ export default function Reservations({ user, setPage, setToast }) {
 
   useEffect(() => { refresh(); }, [user?.customerId]);
 
-  const cancel = async (e, r) => {
+  const requestCancel = (e, r) => {
     e.stopPropagation();
     if (cancellingId) return;
-    const startTime = r.time ? r.time.split("–")[0] : null;
-    if (r.date && startTime) {
-      const startDate = new Date(`${r.date}T${startTime}:00`);
-      if (startDate - new Date() < 30 * 60 * 1000) {
-        setToast("Nie można anulować rezerwacji na mniej niż 30 minut przed jej rozpoczęciem.");
-        return;
-      }
+    const startDate = r.startAt ? new Date(r.startAt) : null;
+    if (startDate && startDate - new Date() < 30 * 60 * 1000) {
+      setToast("Nie można anulować rezerwacji na mniej niż 30 minut przed jej rozpoczęciem.");
+      return;
+    }
+    setReservationToCancel(r);
+  };
+
+  const confirmCancel = async () => {
+    const r = reservationToCancel;
+    if (!r) return;
+    if (cancellingId) return;
+    const startDate = r.startAt ? new Date(r.startAt) : null;
+    if (startDate && startDate - new Date() < 30 * 60 * 1000) {
+      setReservationToCancel(null);
+      setToast("Nie można anulować rezerwacji na mniej niż 30 minut przed jej rozpoczęciem.");
+      return;
     }
     setCancellingId(r.id);
     try {
       await cancelReservation(r.id, user.customerId);
       await refresh();
+      setReservationToCancel(null);
       setToast("Rezerwacja anulowana.");
     } catch (err) {
       setToast(err.message || "Nie udało się anulować rezerwacji.");
@@ -161,7 +173,7 @@ export default function Reservations({ user, setPage, setToast }) {
             {r.status === "active" && (
               <button
                 className="btn btn-danger btn-sm"
-                onClick={(e) => cancel(e, r)}
+                onClick={(e) => requestCancel(e, r)}
                 disabled={cancellingId === r.id}
                 style={{ marginLeft: 4 }}
               >
@@ -188,6 +200,45 @@ export default function Reservations({ user, setPage, setToast }) {
           )}
         </div>
       ))}
+
+      {reservationToCancel && (
+        <div className="modal-backdrop" onClick={() => setReservationToCancel(null)}>
+          <div
+            className="confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-reservation-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="confirm-modal-icon"><I.Alert /></div>
+            <h3 id="cancel-reservation-title">Anulować rezerwację?</h3>
+            <p>
+              Czy na pewno chcesz anulować rezerwację na parkingu {reservationToCancel.parking}?
+            </p>
+            <div className="confirm-modal-meta">
+              <span>{fmtDate(reservationToCancel.date)}</span>
+              <span>{reservationToCancel.time}</span>
+              <span>{reservationToCancel.price} zł</span>
+            </div>
+            <div className="confirm-modal-actions">
+              <button
+                className="btn btn-o"
+                onClick={() => setReservationToCancel(null)}
+                disabled={cancellingId === reservationToCancel.id}
+              >
+                Nie, zostaw
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={confirmCancel}
+                disabled={cancellingId === reservationToCancel.id}
+              >
+                {cancellingId === reservationToCancel.id ? "Anulowanie..." : "Tak, anuluj"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

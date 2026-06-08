@@ -14,6 +14,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class PricingService {
 
+    private static final long MIN_RESERVATION_MINUTES = 30;
+
     private final PricingPlanRepository pricingPlanRepository;
 
     public PricingService(PricingPlanRepository pricingPlanRepository) {
@@ -28,6 +30,9 @@ public class PricingService {
 
     public PriceEstimateDTO calculatePrice(Integer parkingLotId, LocalDateTime from, LocalDateTime to) {
         validateRange(from, to);
+        if (Duration.between(from, to).toMinutes() < MIN_RESERVATION_MINUTES) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Minimalny czas rezerwacji to 30 minut.");
+        }
 
         PricingPlan pricingPlan = getActivePlan(parkingLotId);
         BigDecimal hours = calculateHours(from, to);

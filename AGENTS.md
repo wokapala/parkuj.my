@@ -594,6 +594,12 @@ PATCH  /admin/api/parkings/{id}/config  # konfiguracja podziału miejsc
 - [x] Uzupełniono encje i repozytoria potrzebne do przepływu: `Customer`, `Vehicle`, `ParkingLot`, `PricingPlan`, `Reservation`
 - [x] `DataInitializer` dodaje przy starcie testowego klienta, pojazd, 5 warszawskich parkingów i aktywne cenniki, jeśli baza jest pusta
 
+### Poprawki rezerwacji (Codex, czerwiec 2026)
+- [x] Anulowanie rezerwacji w `Reservations.jsx` wymaga potwierdzenia w modalu, żeby uniknąć missclicków
+- [x] Frontend liczy cenę tym samym modelem co backend: minuty / 60, zaokrąglenie do 0.01h w górę, następnie kwota do 2 miejsc
+- [x] Minimalny czas rezerwacji to 30 minut; walidacja jest w UI, `ReservationService` i endpointzie wyceny `PricingService`
+- [x] Formularz rezerwacji zapisuje draft w `sessionStorage` na czas sesji użytkownika i czyści go po udanej rezerwacji
+
 ### Do zrobienia (backend — wypełnienie logiki)
 - [ ] Rozbudowa entity `Customer` o pełne pola wg schematu DB (googleSub, firstName, lastName, phone, status, itp.)
 - [ ] Rozbudowa pozostałych encji o pełne pola + relacje JPA (`@ManyToOne`, `@OneToMany`)
