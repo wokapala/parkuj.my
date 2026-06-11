@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import * as I from "../icons";
 import { MOCK_PARKINGS } from "../data/mockData";
 import { fetchParkingLots, checkAvailability, fetchParkingLotPrice } from "../data/api";
+import { MIN_RESERVATION_MINUTES, calcMinutes, formatDuration } from "../data/parkingAvailability";
 
 const makeIcon = () =>
   L.divIcon({
@@ -31,6 +32,8 @@ export default function ParkingDetailsPage({ parkingId, setPage }) {
   const [avail, setAvail]             = useState(null);
   const [priceEst, setPriceEst]       = useState(null);
   const [checkingAvail, setCheckingAvail] = useState(false);
+  const minutes = calcMinutes(timeFrom, timeTo);
+  const durationTooShort = minutes > 0 && minutes < MIN_RESERVATION_MINUTES;
 
   // Załaduj dane parkingu z backendu (fallback: mock)
   useEffect(() => {
@@ -49,7 +52,8 @@ export default function ParkingDetailsPage({ parkingId, setPage }) {
     if (!parking?.id || !date || !timeFrom || !timeTo) return;
     const from = `${date}T${timeFrom}:00`;
     const to   = `${date}T${timeTo}:00`;
-    if (from >= to) { setAvail(null); setPriceEst(null); return; }
+    if (from >= to) { setAvail(null); setPriceEst(null); setCheckingAvail(false); return; }
+    if (durationTooShort) { setAvail(null); setPriceEst(null); setCheckingAvail(false); return; }
 
     setCheckingAvail(true);
     Promise.all([
@@ -59,7 +63,7 @@ export default function ParkingDetailsPage({ parkingId, setPage }) {
       setAvail(a);
       setPriceEst(p);
     }).finally(() => setCheckingAvail(false));
-  }, [parking?.id, date, timeFrom, timeTo]);
+  }, [parking?.id, date, timeFrom, timeTo, durationTooShort]);
 
   if (!parking) return (
     <div className="fin">
@@ -128,9 +132,16 @@ export default function ParkingDetailsPage({ parkingId, setPage }) {
           <label className="fl">Do</label>
           <input className="fi" type="time" value={timeTo} onChange={(e) => setTimeTo(e.target.value)} />
         </div>
-        <div className={`filter-summary${avail?.available ? " is-available" : ""}`}>
+        <div className={`filter-summary${avail?.available && !durationTooShort ? " is-available" : ""}`}>
           {checkingAvail ? (
             <span>Sprawdzam…</span>
+          ) : durationTooShort ? (
+            <>
+              <span>{formatDuration(minutes)} postoju</span>
+              <strong style={{ color: "var(--danger)" }}>
+                Minimum {MIN_RESERVATION_MINUTES} minut
+              </strong>
+            </>
           ) : avail ? (
             <>
               <span>{estimatedPrice ? `${estimatedPrice} zł` : "—"}</span>

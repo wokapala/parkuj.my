@@ -17,6 +17,8 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class AuthService {
 
+    private static final String EMAIL_PATTERN = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$";
+
     private final CustomerRepository customerRepository;
     private final VehicleRepository vehicleRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
@@ -39,7 +41,7 @@ public class AuthService {
         customer.setFirstName(request.getFirstName().trim());
         customer.setLastName(request.getLastName().trim());
         customer.setEmail(email);
-        customer.setPhone(request.getPhone() != null ? request.getPhone().trim() : null);
+        customer.setPhone(isBlank(request.getPhone()) ? null : request.getPhone().trim());
         customer.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         customer.setStatus("ACTIVE");
         Customer saved = customerRepository.save(customer);
@@ -96,8 +98,19 @@ public class AuthService {
         if (isBlank(request.getEmail())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Podaj adres e-mail.");
         }
+        String email = request.getEmail().trim();
+        if (!email.matches(EMAIL_PATTERN)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Podaj poprawny adres e-mail.");
+        }
         if (isBlank(request.getPassword()) || request.getPassword().length() < 6) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hasło musi mieć co najmniej 6 znaków.");
+        }
+        if (!isBlank(request.getPlate())) {
+            String plate = request.getPlate().trim().replaceAll("\\s+", "");
+            if (plate.length() < 5 || plate.length() > 7) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Tablica rejestracyjna musi mieć od 5 do 7 znaków.");
+            }
         }
     }
 

@@ -466,6 +466,69 @@ body {
 .btn-lg { padding: 13px 28px; font-size: 15px }
 .btn-block { width: 100% }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 30, 58, 0.72);
+  backdrop-filter: blur(10px);
+}
+.confirm-modal {
+  width: min(420px, 100%);
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  padding: 24px;
+  animation: slideUp 0.22s ease-out;
+}
+.confirm-modal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger-bg);
+  border: 1px solid rgba(248,113,113,0.25);
+  color: var(--danger);
+  margin-bottom: 14px;
+}
+.confirm-modal h3 {
+  font-size: 20px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.confirm-modal p {
+  color: var(--text2);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+.confirm-modal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.confirm-modal-meta span {
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: var(--bg3);
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'Space Mono', monospace;
+}
+.confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 /* Account pages */
 .account-page {
   display: grid;
