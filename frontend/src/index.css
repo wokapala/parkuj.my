@@ -1486,7 +1486,42 @@ body {
 .split-summary.compact span { font-size: 20px }
 .split-range {
   width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg3);
+  outline: none;
+  cursor: pointer;
+  margin: 8px 0;
   accent-color: var(--accent);
+}
+.split-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg1);
+  box-shadow: 0 0 0 1px var(--accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.split-range::-webkit-slider-thumb:hover { transform: scale(1.15); }
+.split-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg1);
+  box-shadow: 0 0 0 1px var(--accent);
+  cursor: pointer;
+}
+.split-range::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg3);
 }
 
 /* ── Parking spot grid ── */

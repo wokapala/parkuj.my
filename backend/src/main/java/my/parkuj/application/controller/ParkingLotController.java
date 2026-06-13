@@ -7,8 +7,10 @@ import my.parkuj.application.dto.ParkingLotConfigDTO;
 import my.parkuj.application.dto.ParkingLotCreateDTO;
 import my.parkuj.application.dto.ParkingLotDTO;
 import my.parkuj.application.dto.ParkingLotStatsDTO;
+import my.parkuj.application.dto.IncidentReportDTO;
 import my.parkuj.application.dto.PriceEstimateDTO;
 import my.parkuj.application.dto.ReservationResponseDTO;
+import my.parkuj.application.service.IncidentReportService;
 import my.parkuj.application.service.ParkingLotService;
 import java.math.BigDecimal;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -28,9 +30,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class ParkingLotController {
 
     private final ParkingLotService parkingLotService;
+    private final IncidentReportService incidentReportService;
 
-    public ParkingLotController(ParkingLotService parkingLotService) {
+    public ParkingLotController(ParkingLotService parkingLotService, IncidentReportService incidentReportService) {
         this.parkingLotService = parkingLotService;
+        this.incidentReportService = incidentReportService;
     }
 
     @GetMapping
@@ -103,6 +107,18 @@ public class ParkingLotController {
         @RequestParam Integer customerId
     ) {
         return parkingLotService.getReservationsForLot(id, customerId);
+    }
+
+    // Zgłoszenie incydentu przez właściciela parkingu (bez konta admina).
+    // customerId musi być właścicielem parkingu — weryfikacja przez ensureOwner w serwisie.
+    @PostMapping("/{id}/incidents")
+    public IncidentReportDTO reportIncident(
+        @PathVariable Integer id,
+        @RequestParam Integer customerId,
+        @RequestBody IncidentReportDTO request
+    ) {
+        parkingLotService.getReservationsForLot(id, customerId); // rzuca 403 jeśli nie właściciel
+        return incidentReportService.createByOwner(id, request);
     }
 
     // US-A05 — zmiana podziału miejsc i godzin otwarcia. customerId musi być właścicielem.

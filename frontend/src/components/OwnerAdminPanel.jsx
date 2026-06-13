@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import * as I from "../icons";
-import { fetchMyParkingLots, fetchLotReservations } from "../data/api";
+import { fetchMyParkingLots, fetchLotReservations, reportLotIncident } from "../data/api";
 
 const STATUS_LABELS = {
   active: { label: "Aktywna", color: "var(--success)" },
@@ -15,6 +15,19 @@ const FILTER_OPTIONS = [
   { value: "cancelled", label: "Anulowane" },
 ];
 
+const INCIDENT_TYPES = [
+  { value: "BARRIER_FAILURE", label: "Awaria szlabanu" },
+  { value: "PAYMENT_ISSUE",   label: "Problem z płatnością" },
+  { value: "VEHICLE_BLOCKED", label: "Zablokowany pojazd" },
+  { value: "OTHER",           label: "Inne" },
+];
+const SEVERITIES = [
+  { value: "LOW",      label: "Niska" },
+  { value: "MEDIUM",   label: "Średnia" },
+  { value: "HIGH",     label: "Wysoka" },
+  { value: "CRITICAL", label: "Krytyczna" },
+];
+
 export default function OwnerAdminPanel({ user, setToast }) {
   const [lots, setLots]           = useState([]);
   const [lotId, setLotId]         = useState(null);
@@ -23,6 +36,10 @@ export default function OwnerAdminPanel({ user, setToast }) {
   const [resLoading, setResLoading] = useState(false);
   const [filter, setFilter]       = useState("all");
   const [plateFil, setPlateFil]   = useState("");
+  const [view, setView]           = useState("reservations"); // "reservations" | "incidents"
+  const [incidentForm, setIncidentForm] = useState({ incidentType: "BARRIER_FAILURE", severity: "MEDIUM", description: "" });
+  const [incidentError, setIncidentError] = useState("");
+  const [sendingIncident, setSendingIncident] = useState(false);
 
   useEffect(() => {
     if (!user?.customerId) { setLoading(false); return; }
@@ -61,6 +78,25 @@ export default function OwnerAdminPanel({ user, setToast }) {
       .then(setRes)
       .catch(() => setRes([]))
       .finally(() => setResLoading(false));
+  };
+
+  const handleReportIncident = async (e) => {
+    e.preventDefault();
+    if (!incidentForm.description || incidentForm.description.trim().length < 10) {
+      setIncidentError("Opis musi mieć co najmniej 10 znaków.");
+      return;
+    }
+    setSendingIncident(true);
+    setIncidentError("");
+    try {
+      await reportLotIncident(lotId, user.customerId, incidentForm);
+      setIncidentForm({ incidentType: "BARRIER_FAILURE", severity: "MEDIUM", description: "" });
+      setToast("Incydent zgłoszony do SuperAdmina.");
+    } catch (err) {
+      setIncidentError(err.message || "Nie udało się zgłosić incydentu.");
+    } finally {
+      setSendingIncident(false);
+    }
   };
 
   const visible = reservations.filter((r) => {
@@ -108,11 +144,62 @@ export default function OwnerAdminPanel({ user, setToast }) {
             <p className="ss">{lots[0]?.name}</p>
           )}
         </div>
-        <button className="btn btn-o btn-sm" onClick={refresh} disabled={resLoading}>
-          {resLoading ? "Odświeżanie…" : "Odśwież"}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-o btn-sm" onClick={refresh} disabled={resLoading}>
+            {resLoading ? "Odświeżanie…" : "Odśwież"}
+          </button>
+        </div>
+      </div>
+
+      {/* Przełącznik widoku */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        <button className={`btn btn-sm ${view === "reservations" ? "btn-a" : "btn-o"}`} onClick={() => setView("reservations")}>
+          Rezerwacje
+        </button>
+        <button className={`btn btn-sm ${view === "incidents" ? "btn-a" : "btn-o"}`} onClick={() => setView("incidents")}>
+          Zgłoś incydent
         </button>
       </div>
 
+      {/* Widok incydentów */}
+      {view === "incidents" && (
+        <form onSubmit={handleReportIncident} className="wt-card" style={{ maxWidth: 560 }}>
+          <h3 style={{ marginTop: 0 }}>Zgłoś incydent do SuperAdmina</h3>
+          <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 16 }}>
+            Zgłoszenie trafi do panelu SuperAdmina parkuj.my. Opisz możliwie dokładnie co się wydarzyło.
+          </p>
+          {incidentError && (
+            <div className="auth-error" style={{ marginBottom: 12 }}><I.Alert /> {incidentError}</div>
+          )}
+          <div className="fr">
+            <div className="fg">
+              <label className="fl">Typ incydentu</label>
+              <select className="fs" value={incidentForm.incidentType}
+                onChange={(e) => setIncidentForm({ ...incidentForm, incidentType: e.target.value })}>
+                {INCIDENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </div>
+            <div className="fg">
+              <label className="fl">Pilność</label>
+              <select className="fs" value={incidentForm.severity}
+                onChange={(e) => setIncidentForm({ ...incidentForm, severity: e.target.value })}>
+                {SEVERITIES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="fg">
+            <label className="fl">Opis (min. 10 znaków)</label>
+            <textarea className="fi" rows={4} value={incidentForm.description}
+              onChange={(e) => setIncidentForm({ ...incidentForm, description: e.target.value })}
+              placeholder="Co się stało, kiedy, gdzie. Im dokładniej, tym szybciej SuperAdmin zareaguje." />
+          </div>
+          <button type="submit" className="btn btn-a" disabled={sendingIncident}>
+            {sendingIncident ? "Wysyłanie…" : "Wyślij zgłoszenie"}
+          </button>
+        </form>
+      )}
+
+      {view === "reservations" && (<>
       <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: 6 }}>
           {FILTER_OPTIONS.map((opt) => (
@@ -188,6 +275,7 @@ export default function OwnerAdminPanel({ user, setToast }) {
           </div>
         </div>
       )}
+      </>)}
     </div>
   );
 }

@@ -340,9 +340,12 @@ export default function Dashboard({ user, setPage, setToast }) {
                 className="split-range"
                 type="range"
                 min="0"
-                max={split.total}
+                max={split.total || 1}
                 value={split.reservable}
                 onChange={(e) => setReservable(e.target.value)}
+                style={{
+                  background: `linear-gradient(to right, var(--accent) ${split.total ? Math.round((split.reservable / split.total) * 100) : 0}%, var(--bg3) 0%)`,
+                }}
               />
             </div>
             <div className="fr">

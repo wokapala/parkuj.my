@@ -69,6 +69,41 @@ public class CustomerService {
         return CustomerDTO.fromEntity(customerRepository.save(customer));
     }
 
+    // Zbanowanie klienta — status BANNED, konto istnieje ale nie może się logować.
+    @Transactional
+    public CustomerDTO banCustomer(Integer customerId) {
+        Customer customer = findCustomer(customerId);
+        customer.setStatus("BANNED");
+        return CustomerDTO.fromEntity(customerRepository.save(customer));
+    }
+
+    // Odbanowanie klienta.
+    @Transactional
+    public CustomerDTO unbanCustomer(Integer customerId) {
+        Customer customer = findCustomer(customerId);
+        customer.setStatus("ACTIVE");
+        return CustomerDTO.fromEntity(customerRepository.save(customer));
+    }
+
+    // Usunięcie konta — fizyczne. Kaskady usuną pojazdy i rezerwacje (CascadeType.ALL na vehicles).
+    // Rezerwacje nie mają CASCADE z Customer, więc trzeba je wyczyścić ręcznie przez repozytorium.
+    @Transactional
+    public void deleteCustomer(Integer customerId, my.parkuj.application.repository.ReservationRepository reservationRepository) {
+        Customer customer = findCustomer(customerId);
+        // Parkingów nie usuwamy razem z właścicielem (osobna operacja SuperAdmina).
+        // Zerujemy tylko referencję do właściciela, żeby parking nie zniknął.
+        if (customer.getParkingLots() != null) {
+            for (my.parkuj.application.model.ParkingLot lot : customer.getParkingLots()) {
+                lot.setOwner(null);
+            }
+        }
+        // Rezerwacje tego klienta: nie kaskadujemy (inne encje mogą trzymać referencje),
+        // tylko nullujemy customer — rezerwacja zostaje jako rekord historyczny.
+        reservationRepository.findByCustomerCustomerIdOrderByReservedAtDesc(customerId)
+            .forEach(r -> r.setCustomer(null));
+        customerRepository.delete(customer);
+    }
+
     private Customer findCustomer(Integer customerId) {
         if (customerId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brak identyfikatora klienta.");

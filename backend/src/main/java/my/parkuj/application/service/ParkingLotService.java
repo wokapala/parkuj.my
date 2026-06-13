@@ -321,6 +321,27 @@ public class ParkingLotService {
         return stats;
     }
 
+    // Wszystkie parkingi (łącznie z DELETED) — tylko dla panelu SuperAdmina.
+    public List<ParkingLotDTO> getAllParkingLotsAdmin() {
+        return parkingLotRepository.findAll().stream()
+            .sorted((a, b) -> {
+                if (a.getParkingLotId() == null) return 1;
+                if (b.getParkingLotId() == null) return -1;
+                return a.getParkingLotId().compareTo(b.getParkingLotId());
+            })
+            .map(this::toDto)
+            .toList();
+    }
+
+    // Soft-delete parkingu przez SuperAdmina: status → DELETED.
+    // Fizyczne usunięcie jest ryzykowne gdy są aktywne rezerwacje — zamiast tego ukrywamy parking.
+    @Transactional
+    public void deleteParkingLot(Integer parkingLotId) {
+        ParkingLot lot = findParkingLot(parkingLotId);
+        lot.setStatus("DELETED");
+        parkingLotRepository.save(lot);
+    }
+
     // Rezerwacje konkretnego parkingu — panel administracyjny właściciela.
     // ensureOwner gwarantuje, że właściciel widzi wyłącznie rezerwacje swoich parkingów.
     public List<my.parkuj.application.dto.ReservationResponseDTO> getReservationsForLot(

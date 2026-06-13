@@ -65,6 +65,26 @@ export function fetchAllCustomers(adminId) {
   return apiCall(`/api/admin/customers?adminId=${adminId}`);
 }
 
+export function banCustomer(customerId, adminId) {
+  return apiCall(`/api/admin/customers/${customerId}/ban?adminId=${adminId}`, { method: "PATCH" });
+}
+
+export function unbanCustomer(customerId, adminId) {
+  return apiCall(`/api/admin/customers/${customerId}/unban?adminId=${adminId}`, { method: "PATCH" });
+}
+
+export function deleteCustomer(customerId, adminId) {
+  return apiCall(`/api/admin/customers/${customerId}?adminId=${adminId}`, { method: "DELETE" });
+}
+
+export function fetchAllParkingLotsAdmin(adminId) {
+  return apiCall(`/api/admin/parking-lots?adminId=${adminId}`);
+}
+
+export function deleteParkingLot(lotId, adminId) {
+  return apiCall(`/api/admin/parking-lots/${lotId}?adminId=${adminId}`, { method: "DELETE" });
+}
+
 export async function fetchAllReservations(adminId) {
   const data = await apiCall(`/api/admin/reservations?adminId=${adminId}`);
   return Array.isArray(data) ? data.map(mapReservation) : [];
@@ -242,6 +262,14 @@ export function fetchCustomerStats(customerId) {
 
 export function forgotPassword(email) {
   return apiCall(`/api/auth/forgot-password?email=${encodeURIComponent(email)}`, { method: "POST" });
+}
+
+// Zgłoszenie incydentu przez właściciela parkingu (bez konta admina).
+export function reportLotIncident(lotId, customerId, payload) {
+  return apiCall(`/api/parking-lots/${lotId}/incidents?customerId=${customerId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 // Rezerwacje dla konkretnego parkingu (panel właściciela).

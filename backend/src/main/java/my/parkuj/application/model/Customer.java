@@ -56,6 +56,9 @@ public class Customer {
     @OneToMany(mappedBy = "customer")
     private List<Reservation> reservations = new ArrayList<>();
 
+    @OneToMany(mappedBy = "owner")
+    private List<ParkingLot> parkingLots = new ArrayList<>();
+
     @PrePersist
     void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -103,4 +106,7 @@ public class Customer {
 
     public List<Reservation> getReservations() { return reservations; }
     public void setReservations(List<Reservation> reservations) { this.reservations = reservations; }
+
+    public List<ParkingLot> getParkingLots() { return parkingLots; }
+    public void setParkingLots(List<ParkingLot> parkingLots) { this.parkingLots = parkingLots; }
 }

@@ -72,6 +72,36 @@ public class IncidentReportService {
         return IncidentReportDTO.fromEntity(incidentRepository.save(incident));
     }
 
+    // Zgłoszenie incydentu przez właściciela parkingu (bez konta AdminUser).
+    // adminUser = null — widoczne dla SuperAdmina jako zgłoszenie bez autora-admina.
+    @Transactional
+    public IncidentReportDTO createByOwner(Integer parkingLotId, IncidentReportDTO request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Brak danych incydentu.");
+        }
+        String type = normalize(request.getIncidentType());
+        String severity = normalize(request.getSeverity());
+        String description = request.getDescription() != null ? request.getDescription().trim() : "";
+
+        if (!ALLOWED_TYPES.contains(type)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nieznany typ incydentu.");
+        }
+        if (!ALLOWED_SEVERITIES.contains(severity)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nieznana waga incydentu.");
+        }
+        if (description.length() < 10) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Opis musi mieć co najmniej 10 znaków.");
+        }
+
+        IncidentReport incident = new IncidentReport();
+        incident.setAdminUser(null);
+        incident.setIncidentType(type);
+        incident.setSeverity(severity);
+        incident.setDescription(description);
+        incident.setStatus("OPEN");
+        return IncidentReportDTO.fromEntity(incidentRepository.save(incident));
+    }
+
     @Transactional
     public IncidentReportDTO updateStatus(Integer incidentId, String newStatus, Integer adminId) {
         String status = normalize(newStatus);
