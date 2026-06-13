@@ -14,11 +14,11 @@ export default function Landing({ setPage }) {
       </p>
 
       <div className="land-btns">
-        <button className="btn btn-a btn-lg" onClick={() => setPage("auth")}>
-          Zaloguj się
+        <button className="btn btn-a btn-lg" onClick={() => setPage("auth", { customerRegister: true })}>
+          Dołącz jako klient <I.Arr />
         </button>
         <button className="btn btn-o btn-lg" onClick={() => setPage("auth", { ownerRegister: true })}>
-          Dołącz z parkingiem <I.Arr />
+          Dołącz jako właściciel parkingu <I.Arr />
         </button>
       </div>
 

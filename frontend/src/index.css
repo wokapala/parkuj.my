@@ -1191,7 +1191,12 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 420px;
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
+}
+.reserve-list-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 .reserve-list {
   display: grid;
@@ -1199,11 +1204,35 @@ body {
   gap: 12px;
 }
 .reserve-map {
-  min-height: 460px;
+  /* Stała wysokość + sticky: kolumna mapy nie rozciąga się za listą (przez co
+     Leaflet pokazywał puste tło pod kafelkami) i zostaje widoczna przy scrollu. */
+  height: 540px;
+  position: sticky;
+  top: 84px;
   border: 1px solid var(--border);
   border-radius: var(--r2);
   overflow: hidden;
   background: var(--bg2);
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 2px;
+}
+.pager-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+}
+.pager-info small {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text3);
 }
 .res-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px }
 .res-summary { display: flex; flex-direction: column; gap: 10px }
@@ -1649,7 +1678,7 @@ body {
   .auth-copy h1 { font-size: 34px }
   .d-grid { grid-template-columns: repeat(2, 1fr) }
   .reserve-pick-layout { grid-template-columns: 1fr }
-  .reserve-map { min-height: 360px }
+  .reserve-map { height: 360px; position: static; top: auto }
   .res-layout { grid-template-columns: 1fr }
   .dash-layout { grid-template-columns: 1fr }
   .contact-grid { grid-template-columns: 1fr }

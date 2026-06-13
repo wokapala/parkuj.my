@@ -19,7 +19,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const normalizePlate = (plate) => plate.trim().replace(/\s+/g, "").toUpperCase();
 
 export default function AuthPage({ setUser, setRole, setPage, setToast, pageOptions }) {
-  const initialMode = pageOptions?.ownerRegister ? "registerOwner" : "login";
+  const initialMode = pageOptions?.ownerRegister
+    ? "registerOwner"
+    : pageOptions?.customerRegister
+      ? "register"
+      : "login";
   const [mode, setMode] = useState(initialMode);
   const [login, setLogin] = useState(initialLogin);
   const [register, setRegister] = useState(initialRegister);
@@ -257,7 +261,7 @@ export default function AuthPage({ setUser, setRole, setPage, setToast, pageOpti
             Logowanie
           </button>
           <button className={mode === "register" ? "on" : ""} onClick={() => switchMode("register")}>
-            Rejestracja — Klient
+            Klient
           </button>
           <button className={mode === "registerOwner" ? "on" : ""} onClick={() => switchMode("registerOwner")}>
             Właściciel

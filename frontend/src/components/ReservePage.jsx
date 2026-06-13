@@ -19,6 +19,11 @@ const STEPS = [
   { n: 3, label: "Płatność" },
 ];
 
+// Liczba parkingów na stronę listy — ogranicza wysokość listy, żeby kolumna
+// mapy nie rozciągała się w nieskończoność (Leaflet renderuje kafelki tylko do
+// pierwotnej wysokości kontenera, reszta to puste tło).
+const PARKINGS_PER_PAGE = 8;
+
 const makeIcon = (available, selected) =>
   L.divIcon({
     className: "",
@@ -141,6 +146,7 @@ export default function ReservePage({ user, vehicles = [], vehiclesOwnerId = nul
   const [payMethod, setPayMethod]   = useState(() => draft.payMethod || "blik");
   const [blik, setBlik]             = useState(["", "", "", "", "", ""]);
   const [parkings, setParkings]     = useState(MOCK_PARKINGS);
+  const [parkingPage, setParkingPage] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   // Real-time dostępność dla każdego parkingu — pobierana z backendu przy
@@ -250,6 +256,15 @@ export default function ReservePage({ user, vehicles = [], vehiclesOwnerId = nul
       return matchesQuery && hasAvailability && withinHours;
     });
   }, [parkings, search, availabilityMap, timeFrom, timeTo]);
+
+  // Paginacja listy parkingów. Reset do strony 1 gdy zmienia się zbiór wyników.
+  const totalParkingPages = Math.max(1, Math.ceil(filteredParkings.length / PARKINGS_PER_PAGE));
+  useEffect(() => { setParkingPage(1); }, [search, date, timeFrom, timeTo]);
+  const safePage = Math.min(parkingPage, totalParkingPages);
+  const pagedParkings = filteredParkings.slice(
+    (safePage - 1) * PARKINGS_PER_PAGE,
+    safePage * PARKINGS_PER_PAGE
+  );
 
   const parking = parkings.find((p) => p.id === selectedId);
   const savedVehicles = accountVehicles.length ? accountVehicles : [];
@@ -458,23 +473,48 @@ export default function ReservePage({ user, vehicles = [], vehiclesOwnerId = nul
       </div>
 
       <div className="reserve-pick-layout">
-        <div className="reserve-list">
-          {filteredParkings.length > 0 ? (
-            filteredParkings.map((p) => (
-              <PCard
-                key={p.id}
-                p={p}
-                availability={getAvailability(p)}
-                selected={selectedId === p.id}
-                onClick={() => setSelectedId(p.id)}
-                onDetails={() => setPage("parkingDetails", { parkingId: p.id })}
-              />
-            ))
-          ) : (
-            <div className="empty">
-              <div className="empty-ic"><I.MapPin /></div>
-              <h3>Brak parkingów</h3>
-              <p>Zmień frazę wyszukiwania albo wybierz parking z mapy.</p>
+        <div className="reserve-list-wrap">
+          <div className="reserve-list">
+            {filteredParkings.length > 0 ? (
+              pagedParkings.map((p) => (
+                <PCard
+                  key={p.id}
+                  p={p}
+                  availability={getAvailability(p)}
+                  selected={selectedId === p.id}
+                  onClick={() => setSelectedId(p.id)}
+                  onDetails={() => setPage("parkingDetails", { parkingId: p.id })}
+                />
+              ))
+            ) : (
+              <div className="empty">
+                <div className="empty-ic"><I.MapPin /></div>
+                <h3>Brak parkingów</h3>
+                <p>Zmień frazę wyszukiwania albo wybierz parking z mapy.</p>
+              </div>
+            )}
+          </div>
+
+          {totalParkingPages > 1 && (
+            <div className="pager">
+              <button
+                className="btn btn-o btn-sm"
+                disabled={safePage <= 1}
+                onClick={() => setParkingPage((n) => Math.max(1, n - 1))}
+              >
+                ← Poprzednia
+              </button>
+              <span className="pager-info">
+                Strona {safePage} z {totalParkingPages}
+                <small>{filteredParkings.length} parkingów</small>
+              </span>
+              <button
+                className="btn btn-o btn-sm"
+                disabled={safePage >= totalParkingPages}
+                onClick={() => setParkingPage((n) => Math.min(totalParkingPages, n + 1))}
+              >
+                Następna →
+              </button>
             </div>
           )}
         </div>
