@@ -81,6 +81,15 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Nieprawidłowy e-mail lub hasło.");
         }
 
+        // Konto zbanowane przez SuperAdmina nie może się zalogować (US-A: ban realnie blokuje dostęp).
+        if ("BANNED".equalsIgnoreCase(customer.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                "Konto zostało zablokowane. Skontaktuj się z obsługą parkuj.my.");
+        }
+        if ("INACTIVE".equalsIgnoreCase(customer.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Konto jest nieaktywne.");
+        }
+
         return CustomerDTO.fromEntity(customer);
     }
 

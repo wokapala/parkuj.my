@@ -1,5 +1,6 @@
 package my.parkuj.application.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import my.parkuj.application.model.Customer;
 
 public class CustomerDTO {
@@ -29,6 +30,9 @@ public class CustomerDTO {
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
 
+    // Jackson domyślnie serializuje getter isOwner() jako klucz "owner" — wymuszamy "isOwner",
+    // bo frontend filtruje listę po polu c.isOwner (panel SuperAdmina: Klienci vs Właściciele).
+    @JsonProperty("isOwner")
     public boolean isOwner() { return isOwner; }
     public void setOwner(boolean owner) { isOwner = owner; }
 
