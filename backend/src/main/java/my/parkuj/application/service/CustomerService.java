@@ -86,22 +86,24 @@ public class CustomerService {
         return CustomerDTO.fromEntity(customerRepository.save(customer));
     }
 
-    // Usunięcie konta — fizyczne. Kaskady usuną pojazdy i rezerwacje (CascadeType.ALL na vehicles).
-    // Rezerwacje nie mają CASCADE z Customer, więc trzeba je wyczyścić ręcznie przez repozytorium.
+    // Usunięcie konta przez SuperAdmina — fizyczne. Kolejność: najpierw usuwamy
+    // powiązane rezerwacje (customer_id NOT NULL), potem odwiązujemy parkingi
+    // (owner zostaje null — parking nie znika), na końcu kasujemy klienta
+    // (CASCADE usuwa pojazdy automatycznie).
     @Transactional
     public void deleteCustomer(Integer customerId, my.parkuj.application.repository.ReservationRepository reservationRepository) {
         Customer customer = findCustomer(customerId);
-        // Parkingów nie usuwamy razem z właścicielem (osobna operacja SuperAdmina).
-        // Zerujemy tylko referencję do właściciela, żeby parking nie zniknął.
-        if (customer.getParkingLots() != null) {
-            for (my.parkuj.application.model.ParkingLot lot : customer.getParkingLots()) {
-                lot.setOwner(null);
-            }
+
+        // Parkingi właściciela zostają — tylko odwiązujemy właściciela.
+        for (my.parkuj.application.model.ParkingLot lot : customer.getParkingLots()) {
+            lot.setOwner(null);
         }
-        // Rezerwacje tego klienta: nie kaskadujemy (inne encje mogą trzymać referencje),
-        // tylko nullujemy customer — rezerwacja zostaje jako rekord historyczny.
-        reservationRepository.findByCustomerCustomerIdOrderByReservedAtDesc(customerId)
-            .forEach(r -> r.setCustomer(null));
+
+        // Rezerwacje mają customer_id NOT NULL — musimy je usunąć przed usunięciem klienta.
+        reservationRepository.deleteAll(
+            reservationRepository.findByCustomerCustomerIdOrderByReservedAtDesc(customerId)
+        );
+
         customerRepository.delete(customer);
     }
 
