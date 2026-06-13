@@ -194,7 +194,7 @@ export default function AuthPage({ setUser, setRole, setPage, setToast, pageOpti
 
   const copy = COPY[mode];
 
-  const RegisterFields = ({ form, update }) => (
+  const renderRegisterFields = (form, update) => (
     <>
       <div className="fr">
         <div className="fg">
@@ -311,7 +311,7 @@ export default function AuthPage({ setUser, setRole, setPage, setToast, pageOpti
 
         {mode === "register" && (
           <form onSubmit={handleRegister} noValidate>
-            <RegisterFields form={register} update={updateReg} />
+            {renderRegisterFields(register, updateReg)}
             <button className="btn btn-a btn-block" type="submit" disabled={submitting}>
               {submitting ? "Tworzenie konta…" : <>Zarejestruj się <I.Check /></>}
             </button>
@@ -325,7 +325,7 @@ export default function AuthPage({ setUser, setRole, setPage, setToast, pageOpti
               <br />
               <span style={{ color: "var(--text2)" }}>Po założeniu konta przejdziesz do kreatora, gdzie dodasz swój parking.</span>
             </div>
-            <RegisterFields form={registerOwner} update={updateOwnerReg} />
+            {renderRegisterFields(registerOwner, updateOwnerReg)}
             <button className="btn btn-a btn-block" type="submit" disabled={submitting}>
               {submitting ? "Tworzenie konta…" : <>Zarejestruj i dodaj parking <I.Arr /></>}
             </button>

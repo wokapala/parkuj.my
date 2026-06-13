@@ -17,7 +17,7 @@ export default function Landing({ setPage }) {
         <button className="btn btn-a btn-lg" onClick={() => setPage("auth")}>
           Zaloguj się
         </button>
-        <button className="btn btn-o btn-lg" onClick={() => setPage("join")}>
+        <button className="btn btn-o btn-lg" onClick={() => setPage("auth", { ownerRegister: true })}>
           Dołącz z parkingiem <I.Arr />
         </button>
       </div>
