@@ -256,7 +256,7 @@ export default function AuthPage({ setUser, setRole, setPage, setToast, pageOpti
       </div>
 
       <div className="auth-card">
-        <div className="auth-tabs" style={{ display: "flex" }}>
+        <div className="auth-tabs">
           <button className={mode === "login" ? "on" : ""} onClick={() => switchMode("login")}>
             Logowanie
           </button>
