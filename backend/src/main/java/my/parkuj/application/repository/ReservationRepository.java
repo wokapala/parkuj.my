@@ -53,4 +53,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Intege
         LocalDateTime from,
         LocalDateTime to
     );
+
+    // Wszystkie rezerwacje danego parkingu — panel administracyjny właściciela.
+    List<Reservation> findByParkingLotParkingLotIdOrderByReservedAtDesc(Integer parkingLotId);
 }

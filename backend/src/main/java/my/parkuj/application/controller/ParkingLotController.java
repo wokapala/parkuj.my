@@ -8,6 +8,7 @@ import my.parkuj.application.dto.ParkingLotCreateDTO;
 import my.parkuj.application.dto.ParkingLotDTO;
 import my.parkuj.application.dto.ParkingLotStatsDTO;
 import my.parkuj.application.dto.PriceEstimateDTO;
+import my.parkuj.application.dto.ReservationResponseDTO;
 import my.parkuj.application.service.ParkingLotService;
 import java.math.BigDecimal;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -92,6 +93,16 @@ public class ParkingLotController {
         @RequestParam BigDecimal newPrice
     ) {
         return parkingLotService.updatePrice(id, customerId, newPrice);
+    }
+
+    // Rezerwacje danego parkingu — panel administracyjny właściciela.
+    // customerId musi być właścicielem parkingu (widzi tylko swoje parkingi).
+    @GetMapping("/{id}/reservations")
+    public List<ReservationResponseDTO> getLotReservations(
+        @PathVariable Integer id,
+        @RequestParam Integer customerId
+    ) {
+        return parkingLotService.getReservationsForLot(id, customerId);
     }
 
     // US-A05 — zmiana podziału miejsc i godzin otwarcia. customerId musi być właścicielem.

@@ -172,7 +172,7 @@ export default function App() {
       case "home":         return <HomePage setPage={setPage} />;
       case "reserve":      return <ReservePage user={user} vehicles={vehicles} vehiclesOwnerId={vehiclesOwnerId} setPage={setPage} setToast={setToast} />;
       case "reservations": return <Reservations user={user} setPage={setPage} setToast={setToast} />;
-      case "join":         return <JoinPage user={user} setUser={setUser} setPage={setPage} setRole={setRole} />;
+      case "join":         return <JoinPage user={user} setUser={setUser} setPage={setPage} setRole={setRole} role={role} />;
       case "ownerAdmin":   return <OwnerAdminPanel user={user} setPage={setPage} setToast={setToast} />;
       case "dashboard":    return <Dashboard user={user} setPage={setPage} setToast={setToast} />;
       case "contact":      return <ContactPage user={user} setToast={setToast} />;

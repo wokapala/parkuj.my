@@ -16,7 +16,7 @@ const randomWarsawCoords = () => ({
   lng: (21.00 + (Math.random() - 0.5) * 0.10).toFixed(6),
 });
 
-export default function JoinPage({ user, setUser, setPage, setRole }) {
+export default function JoinPage({ user, setUser, setPage, setRole, role }) {
   // Zalogowany użytkownik wchodzący na /join chce kreatora, nie ekranu marketingowego.
   const [wizardStep, setWizardStep] = useState(user ? 1 : 0);
   const [submitting, setSubmitting] = useState(false);
@@ -36,6 +36,15 @@ export default function JoinPage({ user, setUser, setPage, setRole }) {
     openFrom: "06:00",
     openTo: "22:00",
   });
+
+  // Anuluj w kreatorze: właściciel wraca do panelu zarządzania (nie wylatuje na landing),
+  // nowo zarejestrowany właściciel bez parkingu również ląduje na dashboardzie,
+  // a niezalogowany gość wraca do ekranu marketingowego kreatora.
+  const handleCancel = () => {
+    if (user && role === "owner") { setPage("dashboard"); return; }
+    if (user) { setPage("home"); return; }
+    setWizardStep(0);
+  };
 
   const handleStart = () => {
     // Wymagamy zalogowanego konta — wcześniej był tu mock 'Adam Nowak'.
@@ -236,7 +245,7 @@ export default function JoinPage({ user, setUser, setPage, setRole }) {
               </div>
             </div>
             <div className="wt-acts">
-              <button className="btn btn-o" onClick={() => setWizardStep(0)}>Anuluj</button>
+              <button className="btn btn-o" onClick={handleCancel}>Anuluj</button>
               <button className="btn btn-a" onClick={() => setWizardStep(2)}>Dalej <I.Arr /></button>
             </div>
           </div>

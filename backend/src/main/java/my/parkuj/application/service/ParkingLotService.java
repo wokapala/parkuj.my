@@ -321,6 +321,20 @@ public class ParkingLotService {
         return stats;
     }
 
+    // Rezerwacje konkretnego parkingu — panel administracyjny właściciela.
+    // ensureOwner gwarantuje, że właściciel widzi wyłącznie rezerwacje swoich parkingów.
+    public List<my.parkuj.application.dto.ReservationResponseDTO> getReservationsForLot(
+        Integer parkingLotId, Integer ownerCustomerId
+    ) {
+        ParkingLot lot = findParkingLot(parkingLotId);
+        ensureOwner(lot, ownerCustomerId);
+        return reservationRepository
+            .findByParkingLotParkingLotIdOrderByReservedAtDesc(parkingLotId)
+            .stream()
+            .map(my.parkuj.application.dto.ReservationResponseDTO::fromEntity)
+            .toList();
+    }
+
     private ParkingLot findParkingLot(Integer parkingLotId) {
         return parkingLotRepository.findById(parkingLotId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono parkingu."));
