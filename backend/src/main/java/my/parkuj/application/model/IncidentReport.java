@@ -17,7 +17,7 @@ public class IncidentReport {
     private ParkingSession parkingSession;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "admin_user_id")
+    @JoinColumn(name = "admin_user_id", nullable = true)
     private AdminUser adminUser;
 
     private String incidentType;

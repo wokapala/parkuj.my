@@ -110,14 +110,14 @@ public class ParkingLotController {
     }
 
     // Zgłoszenie incydentu przez właściciela parkingu (bez konta admina).
-    // customerId musi być właścicielem parkingu — weryfikacja przez ensureOwner w serwisie.
+    // customerId musi być właścicielem parkingu — weryfikacja przez verifyOwner w serwisie.
     @PostMapping("/{id}/incidents")
     public IncidentReportDTO reportIncident(
         @PathVariable Integer id,
         @RequestParam Integer customerId,
         @RequestBody IncidentReportDTO request
     ) {
-        parkingLotService.getReservationsForLot(id, customerId); // rzuca 403 jeśli nie właściciel
+        parkingLotService.verifyOwner(id, customerId);
         return incidentReportService.createByOwner(id, request);
     }
 

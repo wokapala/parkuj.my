@@ -115,6 +115,7 @@ public class ReservationService {
     }
 
     // Dla panelu admina — wszystkie rezerwacje w systemie (najnowsze pierwsze).
+    @Transactional(readOnly = true)
     public List<ReservationResponseDTO> getAllReservations() {
         return reservationRepository.findAll().stream()
             .sorted((a, b) -> {
@@ -410,18 +411,18 @@ public class ReservationService {
     private ReservationResponseDTO toResponse(Reservation reservation) {
         ReservationResponseDTO response = new ReservationResponseDTO();
         response.setReservationId(reservation.getReservationId());
-        response.setCustomerId(reservation.getCustomer().getCustomerId());
-        response.setVehicleId(reservation.getVehicle().getVehicleId());
+        response.setCustomerId(reservation.getCustomer() != null ? reservation.getCustomer().getCustomerId() : null);
+        response.setVehicleId(reservation.getVehicle() != null ? reservation.getVehicle().getVehicleId() : null);
         response.setReservationCode(reservation.getReservationCode());
         response.setStatus(reservation.getStatus());
-        response.setParkingLotId(reservation.getParkingLot().getParkingLotId());
-        response.setParkingLotName(reservation.getParkingLot().getName());
-        response.setParkingLotAddress(reservation.getParkingLot().getAddress());
-        response.setPlateNumber(reservation.getVehicle().getPlateNumber());
+        response.setParkingLotId(reservation.getParkingLot() != null ? reservation.getParkingLot().getParkingLotId() : null);
+        response.setParkingLotName(reservation.getParkingLot() != null ? reservation.getParkingLot().getName() : null);
+        response.setParkingLotAddress(reservation.getParkingLot() != null ? reservation.getParkingLot().getAddress() : null);
+        response.setPlateNumber(reservation.getVehicle() != null ? reservation.getVehicle().getPlateNumber() : null);
         response.setStartAt(reservation.getStartAt());
         response.setEndAt(reservation.getEndAt());
         response.setPriceEstimated(reservation.getPriceEstimated());
-        response.setCurrency(reservation.getPricingPlan().getCurrency());
+        response.setCurrency(reservation.getPricingPlan() != null ? reservation.getPricingPlan().getCurrency() : null);
         response.setReservedAt(reservation.getReservedAt());
         response.setExpiresAt(reservation.getExpiresAt());
         return response;

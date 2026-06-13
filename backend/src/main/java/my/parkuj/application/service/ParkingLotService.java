@@ -342,8 +342,15 @@ public class ParkingLotService {
         parkingLotRepository.save(lot);
     }
 
+    // Weryfikacja właściciela bez ładowania rezerwacji — do autoryzacji w innych endpointach.
+    public void verifyOwner(Integer parkingLotId, Integer ownerCustomerId) {
+        ParkingLot lot = findParkingLot(parkingLotId);
+        ensureOwner(lot, ownerCustomerId);
+    }
+
     // Rezerwacje konkretnego parkingu — panel administracyjny właściciela.
     // ensureOwner gwarantuje, że właściciel widzi wyłącznie rezerwacje swoich parkingów.
+    @Transactional(readOnly = true)
     public List<my.parkuj.application.dto.ReservationResponseDTO> getReservationsForLot(
         Integer parkingLotId, Integer ownerCustomerId
     ) {

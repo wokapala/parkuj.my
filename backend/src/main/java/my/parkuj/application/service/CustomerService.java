@@ -23,6 +23,7 @@ public class CustomerService {
     }
 
     // Dla panelu admina — wszyscy klienci posortowani od najnowszych.
+    @Transactional(readOnly = true)
     public java.util.List<CustomerDTO> getAllCustomers() {
         return customerRepository.findAll().stream()
             .sorted((a, b) -> {
